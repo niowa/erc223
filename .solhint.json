@@ -1,0 +1,10 @@
+{
+  "extends": "default",
+  "rules": {
+    "indent": ["error", 2],
+    "quotes": ["error", "double"],
+    "max-line-length": ["error", 120],
+    "avoid-suicide": "error",
+    "avoid-sha3": "warn"
+  }
+}

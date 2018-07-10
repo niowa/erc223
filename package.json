@@ -1,8 +1,16 @@
 {
+  "scripts": {
+    "test": "truffle test || exit 0",
+    "test-pre-commit": "truffle test"
+  },
   "dependencies": {
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "ganache-cli": "^6.1.0",
+    "pre-commit": "^1.2.2",
     "truffle": "^4.1.7"
-  }
+  },
+  "pre-commit": [
+    "test-pre-commit"
+  ]
 }
