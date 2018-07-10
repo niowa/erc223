@@ -40,7 +40,6 @@ contract Token is Ownable, ERC223, SafeMath {
   /// @param _initialBalances Balances of initial investors
   function generateTokens(address[] _initialInvestors, uint[] _initialBalances) public onlyOwner {
     require(_initialInvestors.length == _initialBalances.length);
-    require(totalSupply == 0);
 
     for (uint i = 0; i < _initialBalances.length; i++) {
       totalSupply += _initialBalances[i];
