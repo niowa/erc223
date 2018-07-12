@@ -2,9 +2,14 @@ module.exports = function(accounts) {
   return {
     tokenPrice: 100,
     tokenDecimalPlaces: 18,
+    tokenRate: 2,
+    transferLock: {
+      amount: '10',
+      unit: 'minutes',
+    },
     options: {
       gasPrice: 10*1000000000,
-      from: '0xef8ffc5f2ad6ce86e9570812575e3653e8d0bece'
+      from: '0xe28eadfd8b2371a2678433c3164cdd2aed22005d'
     },
   };
 }
