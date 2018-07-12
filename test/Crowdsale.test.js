@@ -1,3 +1,4 @@
+const moment = require('moment');
 const chai = require('chai');
 const chaiAsPromised = require('chai-as-promised');
 chai.use(chaiAsPromised);
@@ -16,6 +17,8 @@ const notEnoughAmount = 50;
 const contractDecimals = 5;
 const etherInWei = 100;
 
+const lockedAt = Math.floor(moment().add(1, 'minute'));
+
 function sleep(ms = 0) {
   return new Promise(r => setTimeout(r, ms));
 }
@@ -26,7 +29,7 @@ const investorsBalances = [
 ];
 
 const createNewContract = async (accounts) => {
-  const token = await Token.new('PlayChip', 'CHIP', 0);
+  const token = await Token.new('PlayChip', 'CHIP', 0, lockedAt);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
 
   return { token, crowdsaleContract };
@@ -53,7 +56,7 @@ contract('PlayChipCrowdsale', (accounts) => {
   });
   describe('#invest', () => {
     it('works if token decimal number is more than 0', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', contractDecimals);
+      const token = await Token.new('PlayChip', 'CHIP', contractDecimals, lockedAt);
       const crowdsaleContract = await Crowdsale.new(token.address, 1, rate);
       await token.setTokenGenerator(crowdsaleContract.address);
 
@@ -64,7 +67,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       await assert.isBelow(+currentBalance, +expectedBalance);
     });
     it('decreases investor balance', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', contractDecimals);
+      const token = await Token.new('PlayChip', 'CHIP', contractDecimals, lockedAt);
       const crowdsaleContract = await Crowdsale.new(token.address, 1, rate);
       await token.setTokenGenerator(crowdsaleContract.address);
       const senderStartBalance = web3.eth.getBalance(accounts[1]);
@@ -73,7 +76,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       await assert.equal(senderBalance.toNumber(), senderStartBalance.sub(etherInWei).toNumber());
     });
     it('transfers ether to withdrawal address', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', contractDecimals);
+      const token = await Token.new('PlayChip', 'CHIP', contractDecimals, lockedAt);
       const crowdsaleContract = await Crowdsale.new(token.address, 1, rate);
       await token.setTokenGenerator(crowdsaleContract.address);
 
@@ -84,7 +87,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       await assert.equal(withdrawBalance.toNumber(), withdrawStartBalance.add(tokenCost).toNumber());
     });
     it('reject if token generator has not set', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', contractDecimals);
+      const token = await Token.new('PlayChip', 'CHIP', contractDecimals, lockedAt);
       const crowdsaleContract = await Crowdsale.new(token.address, 1, rate);
 
       await assert.isRejected(crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei }));
@@ -93,10 +96,10 @@ contract('PlayChipCrowdsale', (accounts) => {
 
   describe('#tokenFallback', () => {
     it('throws in any token transaction', async () => {
-      const tokenContract = await Token.new('chip', 'chip', 0);
+      const tokenContract = await Token.new('chip', 'chip', 0, lockedAt);
       const crowdsaleContract = await Crowdsale.new(tokenContract.address, tokenCost, rate);
       await tokenContract.generateTokens(accounts[0], 1000);
-      await assert.isRejected(tokenContract.transfer(crowdsaleContract.address, 100, {from: accounts[0]}));
+      await assert.isRejected(tokenContract.transfer(crowdsaleContract.address, 100, { from: accounts[0] }));
     });
   });
 });

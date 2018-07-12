@@ -7,6 +7,7 @@
     "chai": "^4.1.2",
     "chai-as-promised": "^7.1.1",
     "ganache-cli": "^6.1.0",
+    "moment": "^2.22.2",
     "pre-commit": "^1.2.2",
     "truffle": "^4.1.7"
   },

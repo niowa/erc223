@@ -1,13 +1,15 @@
+const moment = require('moment');
 const Token = artifacts.require('Token');
 const Crowdsale = artifacts.require('Crowdsale');
 const getConfig = require('../config.js');
 
 module.exports = function (deployer, network, accounts) {
   let deployedToken;
+  const lokedAt = Math.floor(moment().add(3, 'seconds'));
   const config = getConfig(accounts);
-  // deployer.deploy(Token, 'MyCHIP', 'CHIP', config.tokenDecimalPlaces, config.options);
+
   return deployer.then(() => (
-    deployer.deploy(Token, 'MyCHIP', 'CHIP', config.tokenDecimalPlaces, config.options)
+    deployer.deploy(Token, 'MyCHIP', 'CHIP', config.tokenDecimalPlaces, lokedAt, config.options)
   ))
     .then((token) => {
       deployedToken = token;
