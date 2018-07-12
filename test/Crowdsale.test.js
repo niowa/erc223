@@ -18,7 +18,7 @@ function sleep(ms = 0) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-const createNewContract = async (accounts) => {
+const createNewContract = async () => {
   const token = await Token.new('PlayChip', 'CHIP', 0);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
 
@@ -28,8 +28,22 @@ const createNewContract = async (accounts) => {
 contract('PlayChipCrowdsale', (accounts) => {
   context('After Deploy', () => {
     it('should be owned by creator', async () => {
-      const { crowdsaleContract, token } = await createNewContract(accounts);
+      const { crowdsaleContract } = await createNewContract(accounts);
       await assert.equal(await crowdsaleContract.owner(), accounts[0]);
+    });
+  });
+  describe('#constructor', () => {
+    it('check props after crating', async () => {
+      const token = await Token.new('PlayChip', 'CHIP', 0);
+
+      const tokenCost = 500;
+      const rate = 4;
+
+      const crowdsale = await Crowdsale.new(token.address, tokenCost, rate);
+
+      assert.equal(await crowdsale.token(), token.address);
+      assert.equal(await crowdsale.initPrice(), tokenCost);
+      assert.equal(await crowdsale.rate(), rate);
     });
   });
   describe('#set rate', () => {

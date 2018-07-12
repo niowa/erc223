@@ -33,6 +33,19 @@ contract('Token', function(accounts) {
         });
     });
   });
+  describe('#constructor', () => {
+    it('check props after crating', async () => {
+      const name = 'Test';
+      const symbol = 'test';
+      const decimals = 6;
+
+      const token = await Token.new(name, symbol, decimals);
+
+      assert.equal(await token.name(), name);
+      assert.equal(await token.symbol(), symbol);
+      assert.equal(await token.decimals(), decimals);
+    });
+  });
   describe('#generateTokens', () => {
     it('changes investor balance',async () => {
       const token = await Token.new('chip', 'chip', 0);
