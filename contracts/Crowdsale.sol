@@ -34,6 +34,7 @@ contract Crowdsale is Ownable, SafeMath {
     amountRaised += amount;
     uint tokensBought = convertEthToTokens(amount);
     token.generateTokens(msg.sender, tokensBought);
+    token.lockTransfer(msg.sender);
     if (isContract(msg.sender)) {
       bytes memory empty;
       ERC223RecieverInterface untrustedReceiver = ERC223RecieverInterface(msg.sender);

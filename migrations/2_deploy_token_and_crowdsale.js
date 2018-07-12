@@ -5,9 +5,9 @@ const getConfig = require('../config.js');
 module.exports = function (deployer, network, accounts) {
   let deployedToken;
   const config = getConfig(accounts);
-  // deployer.deploy(Token, 'MyCHIP', 'CHIP', config.tokenDecimalPlaces, config.options);
+
   return deployer.then(() => (
-    deployer.deploy(Token, 'MyCHIP', 'CHIP', config.tokenDecimalPlaces, config.options)
+    deployer.deploy(Token, 'MyCHIP', 'CHIP', config.tokenDecimalPlaces, config.transferLockPeriod, config.options)
   ))
     .then((token) => {
       deployedToken = token;
