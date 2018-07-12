@@ -34,11 +34,6 @@ contract Crowdsale is Ownable, SafeMath {
     amountRaised += amount;
     uint tokensBought = convertEthToTokens(amount);
     token.generateTokens(msg.sender, tokensBought);
-    if (isContract(msg.sender)) {
-      bytes memory empty;
-      ERC223RecieverInterface untrustedReceiver = ERC223RecieverInterface(msg.sender);
-      untrustedReceiver.tokenFallback(msg.sender, tokensBought, empty);
-    }
     emit FundTransfer(msg.sender, amount); // solhint-disable-line
     withdrawAddress.transfer(amount);
   }
@@ -53,16 +48,5 @@ contract Crowdsale is Ownable, SafeMath {
     uint tokenDecimalsIncrease = uint(10) ** token.decimals();
     uint tokenNumberWithDecimals = safeMul(_amount, tokenDecimalsIncrease);
     return safeDiv(tokenNumberWithDecimals, price);
-  }
-
-  /// @notice check if account is contract
-  /// @param _addr address for check
-  /// @return is address contract or not
-  function isContract(address _addr) private view returns (bool result) {
-    uint length;
-    assembly {
-      length := extcodesize(_addr)
-    }
-    return (length > 0);
   }
 }
