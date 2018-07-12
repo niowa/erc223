@@ -28,9 +28,7 @@ const investorsBalances = [
 const createNewContract = async (accounts) => {
   const token = await Token.new('PlayChip', 'CHIP', 0);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
-  let initialAddresses = [
-    accounts[0],
-  ];
+
   return { token, crowdsaleContract };
 };
 
@@ -45,6 +43,12 @@ contract('PlayChipCrowdsale', (accounts) => {
     it('available only for creator', async () => {
       const { crowdsaleContract, token } = await createNewContract(accounts);
       await assert.isRejected(crowdsaleContract.setRate(newTokenCost, { from: accounts[1] }));
+    });
+    it('set rate value', async () => {
+      const { crowdsaleContract } = await createNewContract(accounts);
+      await crowdsaleContract.setRate(newRate, { from: accounts[0] });
+
+      await assert.eventually.equal(crowdsaleContract.rate(), newRate);
     });
   });
   describe('#invest', () => {
@@ -92,7 +96,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       const tokenContract = await Token.new('chip', 'chip', 0);
       const crowdsaleContract = await Crowdsale.new(tokenContract.address, tokenCost, rate);
       await tokenContract.generateTokens(accounts[0], 1000);
-      assert.isRejected(tokenContract.transfer(crowdsaleContract.address, 100, {from: accounts[0]}));
+      await assert.isRejected(tokenContract.transfer(crowdsaleContract.address, 100, {from: accounts[0]}));
     });
   });
 });
