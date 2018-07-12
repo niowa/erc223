@@ -5,8 +5,8 @@ const getConfig = require('../config.js');
 
 module.exports = function (deployer, network, accounts) {
   let deployedToken;
-  const lokedAt = Math.floor(moment().add(3, 'seconds'));
   const config = getConfig(accounts);
+  const lokedAt = Math.floor(moment().add(config.transferLock.amount, config.transferLock.unit));
 
   return deployer.then(() => (
     deployer.deploy(Token, 'MyCHIP', 'CHIP', config.tokenDecimalPlaces, lokedAt, config.options)
