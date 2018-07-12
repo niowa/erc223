@@ -84,7 +84,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       await assert.equal(withdrawBalance.toNumber(), withdrawStartBalance.add(tokenCost).toNumber());
     });
     it('reject if lock period is active', async () => {
-      const lockPeriod = 1; // 1 second
+      const lockPeriod = 2; // seconds
       const mintedSupply = 20;
       const { crowdsaleContract, token } = await createNewContract(undefined, undefined, 5, lockPeriod);
       await token.setTokenGenerator(crowdsaleContract.address);
