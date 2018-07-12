@@ -37,6 +37,7 @@ contract Token is Ownable, ERC223, SafeMath {
   }
 
   function setTokenGenerator(address _tokeGenerator) external {
+    require(_tokeGenerator != address(0));
     tokenGenerator = _tokeGenerator;
   }
 

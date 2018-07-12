@@ -5,9 +5,9 @@ import "./SafeMath.sol";
 import "./Interfaces/PlayChipTokenInterface.sol";
 import "./Interfaces/ERC223RecieverInterface.sol";
 
+
 /// @title Crowdsale with could sell tokens for eth
 contract Crowdsale is Ownable, SafeMath {
-
   PlayChipTokenInterface public token;
   address public withdrawAddress;
   uint public initPrice;
@@ -44,10 +44,11 @@ contract Crowdsale is Ownable, SafeMath {
   }
 
   function setRate(uint _rate) public onlyOwner {
+    require(rate >= 0);
     rate = _rate;
   }
 
-  function convertEthToTokens(uint _amount) public constant returns (uint convertedAmount) {
+  function convertEthToTokens(uint _amount) public view returns (uint convertedAmount) {
     uint price = safeAdd(safeMul(safeSub(now, startAt), rate), initPrice);
     uint tokenDecimalsIncrease = uint(10) ** token.decimals();
     uint tokenNumberWithDecimals = safeMul(_amount, tokenDecimalsIncrease);
