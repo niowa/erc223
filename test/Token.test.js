@@ -11,7 +11,7 @@ const initialBalances = [
   80
 ];
 
-const createTokenContract = (name = 'PlayChip', symbol = 'CHIP', decimals = 0, lockPeriod = 0) => {
+const createTokenContract = (lockPeriod = 0, decimals = 0, name = 'PlayChip', symbol = 'CHIP') => {
   return Token.new(name, symbol, decimals, lockPeriod);
 };
 
@@ -151,6 +151,15 @@ contract('Token', function(accounts) {
           assert.eventually.equal(token.owner(), accounts[1]);
           done();
         });
+    });
+  });
+  describe('#lockTransfer', () => {
+    it('reject if locked', async () => {
+      const lockedPeriod = 60; // seconds;
+      const token = await createTokenContract(lockedPeriod);
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
+      await token.lockTransfer(initialAddresses[0]);
+      await assert.isRejected(token.transfer(initialAddresses[1], mintedSupply, { from: initialAddresses[0] }));
     });
   });
 });

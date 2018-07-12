@@ -83,6 +83,25 @@ contract('PlayChipCrowdsale', (accounts) => {
       const withdrawBalance = web3.eth.getBalance(await crowdsaleContract.withdrawAddress());
       await assert.equal(withdrawBalance.toNumber(), withdrawStartBalance.add(tokenCost).toNumber());
     });
+    it('reject if lock period is active', async () => {
+      const lockPeriod = 1; // 1 second
+      const mintedSupply = 20;
+      const { crowdsaleContract, token } = await createNewContract(undefined, undefined, 5, lockPeriod);
+      await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
+    });
+    it('successful if lock period has ended', async () => {
+      const lockPeriod = 1; // 1 second
+      const mintedSupply = 20;
+      const { crowdsaleContract, token } = await createNewContract(undefined, undefined, 5, lockPeriod);
+      await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
+      await sleep(1000);
+      await token.transfer(accounts[2], mintedSupply, { from: accounts[1] });
+      assert.eventually.equal(token.balanceOf(accounts[2]), mintedSupply);
+    });
     it('reject if token generator has not set', async () => {
       const { crowdsaleContract } = await createNewContract(undefined, undefined, 5, 0);
 
