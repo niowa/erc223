@@ -36,29 +36,39 @@ contract('Token', function(accounts) {
         });
     });
   });
+  describe('#constructor', () => {
+    it('check props after crating', async () => {
+      const name = 'Test';
+      const symbol = 'test';
+      const decimals = 6;
+      const lockPeriod = 8;
+
+      const token = await Token.new(name, symbol, decimals, lockPeriod);
+
+      assert.equal(await token.name(), name);
+      assert.equal(await token.symbol(), symbol);
+      assert.equal(await token.decimals(), decimals);
+      assert.equal(await token.transferLockPeriod(), lockPeriod);
+    });
+  });
   describe('#generateTokens', () => {
     it('changes investors balances',async () => {
       const token = await createTokenContract();
 
-      await Promise.all([
-        token.generateTokens(initialAddresses[0], initialBalances[0]),
-        token.generateTokens(initialAddresses[1], initialBalances[1]),
-      ]);
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
       assert.equal(await token.balanceOf(initialAddresses[0]), initialBalances[0]);
-      assert.equal(await token.balanceOf(initialAddresses[1]), initialBalances[1]);
     });
-    it('rejected if `balances` and `investors` arrays have different length',async () => {
+    it('rejected if is not owner', async () => {
       const token = await createTokenContract();
-      await assert.isRejected(token.generateTokens(initialAddresses, []));
+      await assert.isRejected(token.generateTokens(initialAddresses[1], initialBalances[1], {
+        from: initialAddresses[1],
+      }));
     });
   });
   describe('#approve', function () {
     it('changes allowance value', async () => {
       const token = await createTokenContract();
-      await Promise.all([
-        token.generateTokens(initialAddresses[0], initialBalances[0]),
-        token.generateTokens(initialAddresses[1], initialBalances[1]),
-      ]);
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
       await token.approve(accounts[1], mintedSupply, { from: accounts[2] });
       await assert.eventually.equal(token.allowance(accounts[2], accounts[1]), mintedSupply);
     });
@@ -73,10 +83,7 @@ contract('Token', function(accounts) {
   describe('#transfer', function () {
     it('changes balance of address', async () => {
       const token = await createTokenContract();
-      await Promise.all([
-        token.generateTokens(initialAddresses[0], initialBalances[0]),
-        token.generateTokens(initialAddresses[1], initialBalances[1]),
-      ]);
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
       await token.transfer(accounts[1], mintedSupply, { from: accounts[2] });
       assert.eventually.equal(token.balanceOf(accounts[2]), initialBalances[0] - mintedSupply);
       assert.eventually.equal(token.balanceOf(accounts[1]), mintedSupply);
@@ -90,10 +97,7 @@ contract('Token', function(accounts) {
     });
     it('impossible to transfer on contract without token fallback function', async () =>{
       const token = await createTokenContract();
-      await Promise.all([
-        token.generateTokens(initialAddresses[0], initialBalances[0]),
-        token.generateTokens(initialAddresses[1], initialBalances[1]),
-      ]);
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
       const tokenNonReciever = await createTokenContract();
       await assert.isRejected(token.transfer(tokenNonReciever, mintedSupply, { from: accounts[1] }));
     });
@@ -101,10 +105,7 @@ contract('Token', function(accounts) {
   describe('#transferFrom', function () {
     it(' changes balances of sender and receiver', async () => {
       const token = await createTokenContract();
-      await Promise.all([
-        token.generateTokens(initialAddresses[0], initialBalances[0]),
-        token.generateTokens(initialAddresses[1], initialBalances[1]),
-      ]);
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
       await token.approve(accounts[1], mintedSupply, { from: accounts[2] });
       await token.transferFrom(accounts[2], accounts[1], mintedSupply, { from: accounts[1] });
       assert.eventually.equal(token.balanceOf(accounts[2]), initialBalances[0] - mintedSupply);
@@ -112,10 +113,7 @@ contract('Token', function(accounts) {
     });
     it('cannot transfer if sender balance not enough', async () =>  {
       const token = await createTokenContract();
-      await Promise.all([
-        token.generateTokens(initialAddresses[0], initialBalances[0]),
-        token.generateTokens(initialAddresses[1], initialBalances[1]),
-      ]);
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
       await token.approve(accounts[1], mintedSupply, { from: accounts[2] });
       await token.transfer(accounts[3], mintedSupply, { from: accounts[2] });
       await assert.isRejected(token.transferFrom(accounts[2], accounts[1], mintedSupply, { from: accounts[1] }));

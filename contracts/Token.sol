@@ -40,17 +40,22 @@ contract Token is Ownable, ERC223, SafeMath {
   }
 
   function setTokenGenerator(address _tokeGenerator) public onlyOwner {
+    require(_tokeGenerator != address(0));
     tokenGenerator = _tokeGenerator;
   }
 
   /// @notice Generete tokens on initial investors balances, sets lock date
-  /// @param _initialInvestor Address of initial investor
-  /// @param _initialBalance Balance of initial investor
-  function generateTokens(address _initialInvestor, uint _initialBalance) public {
+  /// @param _investor Address of initial investor
+  /// @param _tokenAmount Balance of initial investor
+  function generateTokens(address _investor, uint _tokenAmount) public {
     require(msg.sender == tokenGenerator || msg.sender == owner);
-
-    totalSupply += _initialBalance;
-    balances[_initialInvestor] = _initialBalance;
+    if (isContract(_investor)) {
+      bytes memory empty;
+      ERC223RecieverInterface untrustedReceiver = ERC223RecieverInterface(_investor);
+      untrustedReceiver.tokenFallback(msg.sender, _tokenAmount, empty);
+    }
+    totalSupply += _tokenAmount;
+    balances[_investor] = _tokenAmount;
   }
 
   /// @notice Show token balance of `_wallet` address
@@ -95,6 +100,9 @@ contract Token is Ownable, ERC223, SafeMath {
   /// @return Whether the transfer was successful or not
   function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
     require(allowed[_from][msg.sender] >= _value && balances[_from] >= _value);
+    if (transferLockedAt[msg.sender] != 0) {
+      require(transferLockedAt[msg.sender] <= now);
+    }
     changeBalanceAfterTransfer(_from, _to, _value);
     allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender], _value);
 
