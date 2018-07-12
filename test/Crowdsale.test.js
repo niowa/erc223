@@ -11,19 +11,12 @@ const tokenCost = 100;
 const rate = 2;
 const newRate = 3;
 const newTokenCost = 200;
-const transferAmount = 100;
-const notEnoughAmount = 50;
 const contractDecimals = 5;
 const etherInWei = 100;
 
 function sleep(ms = 0) {
   return new Promise(r => setTimeout(r, ms));
 }
-
-const investorsBalances = [
-  110000,
-  90000,
-];
 
 const createNewContract = async (accounts) => {
   const token = await Token.new('PlayChip', 'CHIP', 0);

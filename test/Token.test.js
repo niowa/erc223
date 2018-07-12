@@ -5,7 +5,6 @@ const Token = artifacts.require('Token');
 
 const assert = chai.assert;
 
-const startSupply = 200;
 const mintedSupply = 100;
 
 const initialBalances = [
