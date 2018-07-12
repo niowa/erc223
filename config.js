@@ -2,9 +2,10 @@ module.exports = function(accounts) {
   return {
     tokenPrice: 100,
     tokenDecimalPlaces: 18,
+    tokenRate: 2,
     options: {
       gasPrice: 10*1000000000,
-      from: '0xef8ffc5f2ad6ce86e9570812575e3653e8d0bece'
+      from: '0x4514c7316c5d80bbdf04777bb21d0774b15576c6'
     },
   };
 }

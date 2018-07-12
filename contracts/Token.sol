@@ -12,6 +12,7 @@ contract Token is Ownable, ERC223, SafeMath {
   string public symbol;
   uint8 public decimals;
   uint public totalSupply;
+  address public tokenGenerator;
 
   event Transfer(address indexed _from, address indexed _to, uint _value);
   event Transfer(address indexed _from, address indexed _to, uint _value, bytes  _data);
@@ -35,16 +36,23 @@ contract Token is Ownable, ERC223, SafeMath {
     msg.sender.transfer(_amount);
   }
 
-  /// @notice Generete tokens on initial investors balances, sets lock date
-  /// @param _initialInvestors Addresses of initial investors
-  /// @param _initialBalances Balances of initial investors
-  function generateTokens(address[] _initialInvestors, uint[] _initialBalances) public onlyOwner {
-    require(_initialInvestors.length == _initialBalances.length);
+  function setTokenGenerator(address _tokeGenerator) external {
+    require(_tokeGenerator != address(0));
+    tokenGenerator = _tokeGenerator;
+  }
 
-    for (uint i = 0; i < _initialBalances.length; i++) {
-      totalSupply += _initialBalances[i];
-      balances[_initialInvestors[i]] = _initialBalances[i];
+  /// @notice Generete tokens on initial investors balances, sets lock date
+  /// @param _investor Address of initial investor
+  /// @param _tokenAmount Balance of initial investor
+  function generateTokens(address _investor, uint _tokenAmount) public {
+    require(msg.sender == tokenGenerator || msg.sender == owner);
+    if (isContract(_investor)) {
+      bytes memory empty;
+      ERC223RecieverInterface untrustedReceiver = ERC223RecieverInterface(_investor);
+      untrustedReceiver.tokenFallback(msg.sender, _tokenAmount, empty);
     }
+    totalSupply += _tokenAmount;
+    balances[_investor] = _tokenAmount;
   }
 
   /// @notice Show token balance of `_wallet` address
