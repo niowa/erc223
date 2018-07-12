@@ -39,7 +39,7 @@ contract Token is Ownable, ERC223, SafeMath {
     msg.sender.transfer(_amount);
   }
 
-  function setTokenGenerator(address _tokeGenerator) external {
+  function setTokenGenerator(address _tokeGenerator) public onlyOwner {
     tokenGenerator = _tokeGenerator;
   }
 

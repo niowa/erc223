@@ -5,16 +5,14 @@ const Token = artifacts.require('Token');
 
 const assert = chai.assert;
 
-const startSupply = 200;
 const mintedSupply = 100;
-
 const initialBalances = [
   120,
   80
 ];
 
-const createTokenContract = () => {
-  return Token.new('PlayChip', 'CHIP', 0, 0);
+const createTokenContract = (name = 'PlayChip', symbol = 'CHIP', decimals = 0, lockPeriod = 0) => {
+  return Token.new(name, symbol, decimals, lockPeriod);
 };
 
 contract('Token', function(accounts) {
@@ -41,7 +39,7 @@ contract('Token', function(accounts) {
   describe('#generateTokens', () => {
     it('changes investors balances',async () => {
       const token = await createTokenContract();
-      const investorStartBalance = await token.balanceOf(initialAddresses[0]);
+
       await Promise.all([
         token.generateTokens(initialAddresses[0], initialBalances[0]),
         token.generateTokens(initialAddresses[1], initialBalances[1]),
