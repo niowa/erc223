@@ -8,18 +8,23 @@ const Token = artifacts.require('Token.sol');
 const Crowdsale = artifacts.require('Crowdsale.sol');
 
 const tokenCost = 100;
-const rate = 2;
 const newRate = 3;
-const newTokenCost = 200;
-const contractDecimals = 5;
 const etherInWei = 100;
 
 function sleep(ms = 0) {
   return new Promise(r => setTimeout(r, ms));
 }
 
-const createNewContract = async () => {
-  const token = await Token.new('PlayChip', 'CHIP', 0);
+
+const createNewContract = async (
+  decimals = 0,
+  lockPeriod = 0,
+  tokenCost = 200,
+  rate = 2,
+  name = 'PlayChip',
+  symbol = 'CHIP',
+) => {
+  const token = await Token.new(name, symbol, decimals, lockPeriod);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
 
   return { token, crowdsaleContract };
@@ -28,13 +33,13 @@ const createNewContract = async () => {
 contract('PlayChipCrowdsale', (accounts) => {
   context('After Deploy', () => {
     it('should be owned by creator', async () => {
-      const { crowdsaleContract } = await createNewContract(accounts);
+      const { crowdsaleContract } = await createNewContract();
       await assert.equal(await crowdsaleContract.owner(), accounts[0]);
     });
   });
   describe('#constructor', () => {
     it('check props after crating', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', 0);
+      const token = await Token.new('PlayChip', 'CHIP', 0, 0);
 
       const tokenCost = 500;
       const rate = 4;
@@ -48,11 +53,12 @@ contract('PlayChipCrowdsale', (accounts) => {
   });
   describe('#set rate', () => {
     it('available only for creator', async () => {
-      const { crowdsaleContract, token } = await createNewContract(accounts);
+      const newTokenCost = 200;
+      const { crowdsaleContract } = await createNewContract();
       await assert.isRejected(crowdsaleContract.setRate(newTokenCost, { from: accounts[1] }));
     });
     it('set rate value', async () => {
-      const { crowdsaleContract } = await createNewContract(accounts);
+      const { crowdsaleContract } = await createNewContract();
       await crowdsaleContract.setRate(newRate, { from: accounts[0] });
 
       await assert.eventually.equal(crowdsaleContract.rate(), newRate);
@@ -60,8 +66,7 @@ contract('PlayChipCrowdsale', (accounts) => {
   });
   describe('#invest', () => {
     it('works if token decimal number is more than 0', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', contractDecimals);
-      const crowdsaleContract = await Crowdsale.new(token.address, 1, rate);
+      const { crowdsaleContract, token } = await createNewContract(5, 0);
       await token.setTokenGenerator(crowdsaleContract.address);
 
       const expectedBalance = await crowdsaleContract.convertEthToTokens(etherInWei);
@@ -71,8 +76,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       await assert.isBelow(+currentBalance, +expectedBalance);
     });
     it('decreases investor balance', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', contractDecimals);
-      const crowdsaleContract = await Crowdsale.new(token.address, 1, rate);
+      const { crowdsaleContract, token } = await createNewContract(5, 0);
       await token.setTokenGenerator(crowdsaleContract.address);
       const senderStartBalance = web3.eth.getBalance(accounts[1]);
       await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
@@ -80,8 +84,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       await assert.equal(senderBalance.toNumber(), senderStartBalance.sub(etherInWei).toNumber());
     });
     it('transfers ether to withdrawal address', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', contractDecimals);
-      const crowdsaleContract = await Crowdsale.new(token.address, 1, rate);
+      const { crowdsaleContract, token } = await createNewContract(5, 0);
       await token.setTokenGenerator(crowdsaleContract.address);
 
       const withdrawStartBalance = web3.eth.getBalance(await crowdsaleContract.withdrawAddress());
@@ -90,9 +93,27 @@ contract('PlayChipCrowdsale', (accounts) => {
       const withdrawBalance = web3.eth.getBalance(await crowdsaleContract.withdrawAddress());
       await assert.equal(withdrawBalance.toNumber(), withdrawStartBalance.add(tokenCost).toNumber());
     });
+    it('reject if lock period is active', async () => {
+      const lockPeriod = 12; // seconds
+      const mintedSupply = 20;
+      const { crowdsaleContract, token } = await createNewContract(5, lockPeriod);
+      await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
+    });
+    it('successful if lock period has ended', async () => {
+      const lockPeriod = 1; // 1 second
+      const mintedSupply = 20;
+      const { crowdsaleContract, token } = await createNewContract(5, lockPeriod);
+      await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
+      await sleep(1000);
+      await token.transfer(accounts[2], mintedSupply, { from: accounts[1] });
+      await assert.eventually.equal(token.balanceOf(accounts[2]), mintedSupply);
+    });
     it('reject if token generator has not set', async () => {
-      const token = await Token.new('PlayChip', 'CHIP', contractDecimals);
-      const crowdsaleContract = await Crowdsale.new(token.address, 1, rate);
+      const { crowdsaleContract } = await createNewContract(5, 0);
 
       await assert.isRejected(crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei }));
     });
@@ -100,10 +121,9 @@ contract('PlayChipCrowdsale', (accounts) => {
 
   describe('#tokenFallback', () => {
     it('throws in any token transaction', async () => {
-      const tokenContract = await Token.new('chip', 'chip', 0);
-      const crowdsaleContract = await Crowdsale.new(tokenContract.address, tokenCost, rate);
-      await tokenContract.generateTokens(accounts[0], 1000);
-      await assert.isRejected(tokenContract.transfer(crowdsaleContract.address, 100, {from: accounts[0]}));
+      const { crowdsaleContract, token } = await createNewContract(5, 0);
+      await token.generateTokens(accounts[0], 1000);
+      await assert.isRejected(token.transfer(crowdsaleContract.address, 100, { from: accounts[0] }));
     });
   });
 });

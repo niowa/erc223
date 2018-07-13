@@ -5,5 +5,6 @@ import "./ERC223.sol";
 
 
 contract PlayChipTokenInterface is ERC223, Ownable {
+  function lockTransfer(address _owner) public;
   function generateTokens(address _initialInvestor, uint _initialBalance) public;
 }

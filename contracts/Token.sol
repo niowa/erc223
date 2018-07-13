@@ -12,6 +12,7 @@ contract Token is Ownable, ERC223, SafeMath {
   string public symbol;
   uint8 public decimals;
   uint public totalSupply;
+  uint public transferLockPeriod;
   address public tokenGenerator;
 
   event Transfer(address indexed _from, address indexed _to, uint _value);
@@ -20,13 +21,15 @@ contract Token is Ownable, ERC223, SafeMath {
 
   mapping(address => uint) public balances;
   mapping(address => mapping(address => uint)) public allowed;
+  mapping(address => uint) public transferLockedAt;
 
-  constructor(string _name, string _symbol, uint8 _decimals) public {
+  constructor(string _name, string _symbol, uint8 _decimals, uint _transferLockPeriod) public {
     owner = msg.sender;
     name = _name;
     symbol = _symbol;
     decimals = _decimals;
     totalSupply = 0;
+    transferLockPeriod = _transferLockPeriod;
   }
 
   /// @notice Withdraw `_amount` of tokens to owner balance
@@ -36,9 +39,11 @@ contract Token is Ownable, ERC223, SafeMath {
     msg.sender.transfer(_amount);
   }
 
-  function setTokenGenerator(address _tokeGenerator) external {
-    require(_tokeGenerator != address(0));
-    tokenGenerator = _tokeGenerator;
+  /// @notice Set address which can generate tokens
+  /// @param _tokenGenerator Address of token generator
+  function setTokenGenerator(address _tokenGenerator) public onlyOwner {
+    require(_tokenGenerator != address(0));
+    tokenGenerator = _tokenGenerator;
   }
 
   /// @notice Generete tokens on initial investors balances, sets lock date
@@ -77,6 +82,7 @@ contract Token is Ownable, ERC223, SafeMath {
   /// @param _data Additional data for sending tokens
   /// @return Whether the transfer was successful or not
   function transfer(address _to, uint _value, bytes _data) public returns (bool success) {
+    isTransferLocked();
     changeBalanceAfterTransfer(msg.sender, _to, _value);
     if (isContract(_to)) {
       ERC223RecieverInterface untrustedReceiver = ERC223RecieverInterface(_to);
@@ -94,6 +100,7 @@ contract Token is Ownable, ERC223, SafeMath {
   /// @return Whether the transfer was successful or not
   function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
     require(allowed[_from][msg.sender] >= _value && balances[_from] >= _value);
+    isTransferLocked();
     changeBalanceAfterTransfer(_from, _to, _value);
     allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender], _value);
 
@@ -119,6 +126,13 @@ contract Token is Ownable, ERC223, SafeMath {
     return true;
   }
 
+  /// @notice Lock transfer operation for `transferLockPeriod` seconds
+  /// @param _owner The address of the account owning tokens
+  function lockTransfer(address _owner) public {
+    require(msg.sender == tokenGenerator || msg.sender == owner);
+    transferLockedAt[_owner] = now + transferLockPeriod;
+  }
+
   /// @notice Show how much allowed to transfer from `_from` to `_to`
   /// @param _owner The address of the account owning tokens
   /// @param _spender The address of the account able to transfer the tokens
@@ -138,6 +152,13 @@ contract Token is Ownable, ERC223, SafeMath {
     return (length > 0);
   }
 
+  /// @notice check if `transferLockedAt` collection has message sender
+  function isTransferLocked() private view {
+    if (transferLockedAt[msg.sender] != 0) {
+      require(transferLockedAt[msg.sender] <= now);
+    }
+  }
+
   /// @notice change balance of addresses if it is possible
   /// @param _from The address of the sender
   /// @param _to The address of the recipient
@@ -146,7 +167,6 @@ contract Token is Ownable, ERC223, SafeMath {
   function changeBalanceAfterTransfer(address _from, address _to, uint _value) private {
     require(balances[_from] >= _value);
     require(balances[_to] + _value > balances[_to]);
-
     balances[_from] -= _value;
     balances[_to] += _value;
   }
