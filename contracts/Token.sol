@@ -124,6 +124,13 @@ contract Token is Ownable, ERC223, SafeMath {
     return true;
   }
 
+  /// @notice Lock transfer operation for `transferLockPeriod` seconds
+  /// @param _owner The address of the account owning tokens
+  function lockTransfer(address _owner) public {
+    require(msg.sender == tokenGenerator || msg.sender == owner);
+    transferLockedAt[_owner] = now + transferLockPeriod;
+  }
+
   /// @notice Show how much allowed to transfer from `_from` to `_to`
   /// @param _owner The address of the account owning tokens
   /// @param _spender The address of the account able to transfer the tokens
@@ -143,6 +150,7 @@ contract Token is Ownable, ERC223, SafeMath {
     return (length > 0);
   }
 
+  /// @notice check if `transferLockedAt` collection has message sender
   function isTransferLocked() private view {
     if (transferLockedAt[msg.sender] != 0) {
       require(transferLockedAt[msg.sender] <= now);
@@ -157,13 +165,7 @@ contract Token is Ownable, ERC223, SafeMath {
   function changeBalanceAfterTransfer(address _from, address _to, uint _value) private {
     require(balances[_from] >= _value);
     require(balances[_to] + _value > balances[_to]);
-
     balances[_from] -= _value;
     balances[_to] += _value;
-  }
-
-  function lockTransfer(address _owner) public {
-    require(msg.sender == tokenGenerator || msg.sender == owner);
-    transferLockedAt[_owner] = now + transferLockPeriod;
   }
 }
