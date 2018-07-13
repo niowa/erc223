@@ -138,7 +138,7 @@ contract('Token', function(accounts) {
     });
   });
   describe('#transferOwnership', function () {
-    it(' should transfer ownership', function (done) {
+    it('should transfer ownership', function (done) {
       let token;
       createTokenContract()
         .then(function (instance) {
@@ -158,6 +158,19 @@ contract('Token', function(accounts) {
       await token.generateTokens(initialAddresses[0], initialBalances[0]);
       await token.lockTransfer(initialAddresses[0]);
       await assert.isRejected(token.transfer(initialAddresses[1], mintedSupply, { from: initialAddresses[0] }));
+    });
+  });
+  describe('#burnTokens', () => {
+    it('should burns tokens', async () => {
+      const token = await createTokenContract();
+      await token.setTokenGenerator(initialAddresses[0]);
+
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
+      await assert.eventually.equal(token.balanceOf(initialAddresses[0]), initialBalances[0]);
+
+      await token.burnTokens(initialAddresses[0], initialBalances[0]);
+      await assert.eventually.equal(token.balanceOf(initialAddresses[0]), 0);
+      await assert.eventually.equal(token.totalSupply(), 0);
     });
   });
 });
