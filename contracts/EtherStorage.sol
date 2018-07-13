@@ -7,17 +7,17 @@ import "./Ownable.sol";
 contract EtherStorage is Ownable {
   address public crowdsale;
 
-  constructor(address _crowdsale) {
-    crowdsale = _crowdsale;
+  constructor(address _crowdsaleAddress) public {
+    crowdsale = _crowdsaleAddress;
   }
 
   function withdrawEtherToUser(address _to, uint _amount) public {
-    require(msg.sender != address(0));
+    require(_to != address(0));
     require(msg.sender == crowdsale);
     _to.transfer(_amount);
   }
 
-  function withdrawEther(address _to, uint _amount) public onlyOwner {
+  function withdrawEtherToOwner(uint _amount) public onlyOwner {
     require(msg.sender != address(0));
     msg.sender.transfer(_amount);
   }
