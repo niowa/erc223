@@ -136,6 +136,21 @@ contract Token is Ownable, ERC223, SafeMath {
     return allowed[_owner][_spender];
   }
 
+  function lockTransfer(address _owner) public {
+    require(msg.sender == tokenGenerator || msg.sender == owner);
+    transferLockedAt[_owner] = now + transferLockPeriod;
+  }
+
+  function burnTokens(address _target, uint _amount) public returns (bool success) {
+    require(_amount > 0);
+    require(_amount <= totalSupply);
+    require(_target == tokenGenerator);
+    require(_amount <= balances[tokenGenerator]);
+    balances[_target] -= _amount;
+    totalSupply -= _amount;
+    return true;
+  }
+
   /// @notice check if account is contract
   /// @param _addr address for check
   /// @return is address contract or not
@@ -160,8 +175,4 @@ contract Token is Ownable, ERC223, SafeMath {
     balances[_to] += _value;
   }
 
-  function lockTransfer(address _owner) public {
-    require(msg.sender == tokenGenerator || msg.sender == owner);
-    transferLockedAt[_owner] = now + transferLockPeriod;
-  }
 }
