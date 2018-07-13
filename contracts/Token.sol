@@ -80,9 +80,7 @@ contract Token is Ownable, ERC223, SafeMath {
   /// @param _data Additional data for sending tokens
   /// @return Whether the transfer was successful or not
   function transfer(address _to, uint _value, bytes _data) public returns (bool success) {
-    if (transferLockedAt[msg.sender] != 0) {
-      require(transferLockedAt[msg.sender] <= now);
-    }
+    isTransferLocked();
     changeBalanceAfterTransfer(msg.sender, _to, _value);
     if (isContract(_to)) {
       ERC223RecieverInterface untrustedReceiver = ERC223RecieverInterface(_to);
@@ -100,9 +98,7 @@ contract Token is Ownable, ERC223, SafeMath {
   /// @return Whether the transfer was successful or not
   function transferFrom(address _from, address _to, uint _value) public returns (bool success) {
     require(allowed[_from][msg.sender] >= _value && balances[_from] >= _value);
-    if (transferLockedAt[msg.sender] != 0) {
-      require(transferLockedAt[msg.sender] <= now);
-    }
+    isTransferLocked();
     changeBalanceAfterTransfer(_from, _to, _value);
     allowed[_from][msg.sender] = safeSub(allowed[_from][msg.sender], _value);
 
@@ -145,6 +141,12 @@ contract Token is Ownable, ERC223, SafeMath {
       length := extcodesize(_addr)
     }
     return (length > 0);
+  }
+
+  function isTransferLocked() private view {
+    if (transferLockedAt[msg.sender] != 0) {
+      require(transferLockedAt[msg.sender] <= now);
+    }
   }
 
   /// @notice change balance of addresses if it is possible
