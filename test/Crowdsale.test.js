@@ -110,7 +110,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
       await sleep(1000);
       await token.transfer(accounts[2], mintedSupply, { from: accounts[1] });
-      assert.eventually.equal(token.balanceOf(accounts[2]), mintedSupply);
+      await assert.eventually.equal(token.balanceOf(accounts[2]), mintedSupply);
     });
     it('reject if token generator has not set', async () => {
       const { crowdsaleContract } = await createNewContract(5, 0);
