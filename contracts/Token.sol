@@ -39,9 +39,11 @@ contract Token is Ownable, ERC223, SafeMath {
     msg.sender.transfer(_amount);
   }
 
-  function setTokenGenerator(address _tokeGenerator) public onlyOwner {
-    require(_tokeGenerator != address(0));
-    tokenGenerator = _tokeGenerator;
+  /// @notice Set address which can generate tokens
+  /// @param _tokenGenerator Address of token generator
+  function setTokenGenerator(address _tokenGenerator) public onlyOwner {
+    require(_tokenGenerator != address(0));
+    tokenGenerator = _tokenGenerator;
   }
 
   /// @notice Generete tokens on initial investors balances, sets lock date

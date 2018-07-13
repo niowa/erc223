@@ -39,11 +39,15 @@ contract Crowdsale is Ownable, SafeMath {
     withdrawAddress.transfer(amount);
   }
 
+  /// @notice Set coefficient for token price
   function setRate(uint _rate) public onlyOwner {
     require(rate >= 0);
     rate = _rate;
   }
 
+  /// @notice Convert eth to token
+  /// @param _amount Number of tokens
+  /// @return Amount of wei
   function convertEthToTokens(uint _amount) public view returns (uint convertedAmount) {
     uint price = safeAdd(safeMul(safeSub(now, startAt), rate), initPrice);
     uint tokenDecimalsIncrease = uint(10) ** token.decimals();
