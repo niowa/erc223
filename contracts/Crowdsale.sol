@@ -43,7 +43,7 @@ contract Crowdsale is Ownable, SafeMath {
     etherStorage = EtherStorage(_storage);
   }
 
-  function tokenFallback(address _from, uint _value, bytes _data) public {
+  function tokenFallback(address _from, uint _value) public {
     require(_from != address(0));
     uint amountEther = convertTokensToEth(_value);
     require(amountEther > 0);

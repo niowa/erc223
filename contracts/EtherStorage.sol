@@ -21,4 +21,9 @@ contract EtherStorage is Ownable {
     require(msg.sender != address(0));
     msg.sender.transfer(_amount);
   }
+
+  function setCrowdsale(address _crowdsale) public onlyOwner {
+    require(_storage != address(0));
+    crowdsale = _crowdsale;
+  }
 }
