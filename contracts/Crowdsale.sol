@@ -8,17 +8,15 @@ import "./Interfaces/EtherStorageInterface.sol";
 /// @title Crowdsale with could sell tokens for eth
 contract Crowdsale is Ownable, SafeMath {
   PlayChipTokenInterface public token;
-  EtherStorage public etherStorage;
+  EtherStorageInterface public etherStorage;
   uint public initPrice;
   uint public rate;
-  uint public amountRaised;
   uint public startAt;
 
   event FundTransfer(address investor, uint amount);
 
   constructor(address _tokenAddress, uint _initPrice, uint _rate) public {
     require(_initPrice > 0);
-    amountRaised = 0;
     owner = msg.sender;
     initPrice = _initPrice;
     rate = _rate;
@@ -29,18 +27,17 @@ contract Crowdsale is Ownable, SafeMath {
   /// @notice Public interface for investment
   function() public payable {
     require(address(etherStorage) != address(0));
-    uint amount = msg.value;
-    amountRaised += amount;
-    uint tokensBought = convertEthToTokens(amount);
+    uint amountEth = msg.value;
+    uint tokensBought = convertEthToTokens(amountEth);
     token.generateTokens(msg.sender, tokensBought);
     token.lockTransfer(msg.sender);
-    emit FundTransfer(msg.sender, amount); // solhint-disable-line
-    address(etherStorage).transfer(amount);
+    emit FundTransfer(msg.sender, amountEth); // solhint-disable-line
+    address(etherStorage).call.value(amountEth)();
   }
 
   function setEtherStorage(address _storage) public onlyOwner {
     require(_storage != address(0));
-    etherStorage = EtherStorage(_storage);
+    etherStorage = EtherStorageInterface(_storage);
   }
 
   function tokenFallback(address _from, uint _value) public {
