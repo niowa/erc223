@@ -6,7 +6,7 @@ module.exports = function(accounts) {
     transferLockPeriod: 60 * 60, // seconds
     options: {
       gasPrice: 10 * 1000000000,
-      from: '0xa3742a5930f1efc9e54a15df44c73fd5ded7e1db'
+      from: '0xe7f572164972e430d334f4e4fe61c860c950febd'
     },
   };
 };

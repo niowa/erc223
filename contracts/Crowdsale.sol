@@ -3,7 +3,7 @@ pragma solidity 0.4.24;
 import "./Ownable.sol";
 import "./SafeMath.sol";
 import "./Interfaces/PlayChipTokenInterface.sol";
-import "./Interfaces/EtherStorage.sol";
+import "./Interfaces/EtherStorageInterface.sol";
 
 /// @title Crowdsale with could sell tokens for eth
 contract Crowdsale is Ownable, SafeMath {
@@ -39,6 +39,7 @@ contract Crowdsale is Ownable, SafeMath {
   }
 
   function setEtherStorage(address _storage) public onlyOwner {
+    require(_storage != address(0));
     etherStorage = EtherStorage(_storage);
   }
 
