@@ -145,7 +145,6 @@ contract Token is Ownable, ERC223, SafeMath {
     require(_amount > 0);
     require(_amount <= totalSupply);
     require(msg.sender == tokenGenerator);
-    require(_amount <= balances[tokenGenerator]);
     balances[_target] -= _amount;
     totalSupply -= _amount;
     return true;

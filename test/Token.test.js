@@ -166,11 +166,36 @@ contract('Token', function(accounts) {
       await token.setTokenGenerator(initialAddresses[0]);
 
       await token.generateTokens(initialAddresses[0], initialBalances[0]);
+
       await assert.eventually.equal(token.balanceOf(initialAddresses[0]), initialBalances[0]);
 
-      await token.burnTokens(initialAddresses[0], initialBalances[0]);
+      await token.burnTokens(initialAddresses[0], initialBalances[0], { from: initialAddresses[0] });
       await assert.eventually.equal(token.balanceOf(initialAddresses[0]), 0);
       await assert.eventually.equal(token.totalSupply(), 0);
+    });
+    it('reject if amount equal 0', async () => {
+      const token = await createTokenContract();
+      await token.setTokenGenerator(initialAddresses[0]);
+
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
+
+      await assert.isRejected(token.burnTokens(initialAddresses[0], 0, { from: initialAddresses[0] }));
+    });
+    it('reject if amount greater than total supply', async () => {
+      const token = await createTokenContract();
+      await token.setTokenGenerator(initialAddresses[0]);
+
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
+
+      await assert.isRejected(token.burnTokens(initialAddresses[0], initialBalances[0] + 1, { from: initialAddresses[0] }));
+    });
+    it('reject if sender is not token generator', async () => {
+      const token = await createTokenContract();
+      await token.setTokenGenerator(initialAddresses[0]);
+
+      await token.generateTokens(initialAddresses[0], initialBalances[0]);
+
+      await assert.isRejected(token.burnTokens(initialAddresses[0], initialBalances[0], { from: initialAddresses[1] }));
     });
   });
 });
