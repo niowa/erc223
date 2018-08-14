@@ -23,10 +23,11 @@ const createNewContract = async (
   rate = 2,
   name = 'PlayChip',
   symbol = 'CHIP',
+  investmentGoal = etherInWei * 3,
 ) => {
   const token = await Token.new(name, symbol, decimals, lockPeriod);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
-  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address);
+  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address, investmentGoal);
 
   return { token, crowdsaleContract, etherStorageContract };
 };
@@ -128,7 +129,7 @@ contract('PlayChipCrowdsale', (accounts) => {
     });
   });
 
-  describe('#tokenFallback', () => {
+  describe.only('#tokenFallback', () => {
     it('throws in any token transaction', async () => {
       const { crowdsaleContract, token } = await createNewContract(5, 0);
       await token.generateTokens(accounts[0], 1000);

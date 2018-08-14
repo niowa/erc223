@@ -4,6 +4,7 @@ module.exports = function(accounts) {
     tokenDecimalPlaces: 18,
     tokenRate: 2,
     transferLockPeriod: 60 * 60, // seconds
+    investmentGoal: 40 ** 18,
     options: {
       gasPrice: 10 * 1000000000,
       from: '0xf64aae0514df9428b742de3c635009d88936a209'

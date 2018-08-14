@@ -23,10 +23,11 @@ const createNewContract = async (
   rate = 2,
   name = 'PlayChip',
   symbol = 'CHIP',
+  investmentGoal = etherInWei * 3,
 ) => {
   const token = await Token.new(name, symbol, decimals, lockPeriod);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
-  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address);
+  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address, investmentGoal);
 
   return { token, crowdsaleContract, etherStorageContract };
 };
@@ -58,27 +59,39 @@ contract('EtherStorage', (accounts) => {
   });
   describe('#invest', () => {
     it('should increase amount raised', async () => {
-      const {etherStorageContract} = await createNewContract(5, 0);
+      const { etherStorageContract } = await createNewContract(5, 0);
       const prevBalance = await etherStorageContract.amountRaised();
       await etherStorageContract.sendTransaction({from: accounts[1], value: etherInWei});
       const currentBalance = await etherStorageContract.amountRaised();
       assert.equal(+currentBalance, +prevBalance.add(etherInWei));
     });
     it('decreases investor balance', async () => {
-      const {etherStorageContract} = await createNewContract(5, 0);
+      const { etherStorageContract } = await createNewContract(5, 0);
       const prevBalance = web3.eth.getBalance(accounts[1]);
       await etherStorageContract.sendTransaction({from: accounts[1], value: etherInWei, gasPrice: 0});
       const currentBalance = web3.eth.getBalance(accounts[1]);
       assert.equal(currentBalance.toString(), prevBalance.sub(etherInWei).toString());
     });
+    it('should transfer ether to owner when contract reaches investment goal', async () => {
+      const bigBet = etherInWei * 3;
+      const { etherStorageContract } = await createNewContract(5, 0);
+      const prevBalance = web3.eth.getBalance(accounts[0]);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: bigBet });
+      const currentBalance = web3.eth.getBalance(accounts[0]);
+      assert.equal(currentBalance.toString(), prevBalance.add(bigBet).toString());
+    });
   });
   describe('#withdrawEtherToUser', () => {
     it('should decrease ether in ether storage', async () => {
-      const { etherStorageContract } = await createNewContract(5, 0);
+      const { etherStorageContract, crowdsaleContract } = await createNewContract(5, 0);
       await etherStorageContract.setCrowdsale(accounts[0]);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+
       await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
       const prevBalance = await etherStorageContract.amountRaised();
       await etherStorageContract.withdrawEtherToUser(accounts[1], etherInWei, { from: accounts[0] });
+      const test = await etherStorageContract.test();
+      console.log(test);
       const currentBalance = await etherStorageContract.amountRaised();
       assert.equal(+currentBalance, +prevBalance.sub(etherInWei));
     });
