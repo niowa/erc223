@@ -9,6 +9,15 @@ contract EtherStorage is Ownable {
   uint public amountRaised;
   uint public investmentGoal;
 
+  /// @notice Withdraws some tokens to owner
+  /// @param _amount Amount of tokens
+  /// @return Whether the withdraw operation was successful or not
+  function withdrawEtherToOwner(uint _amount) internal returns (bool success) {
+    amountRaised -= _amount;
+    owner.transfer(_amount);
+    return true;
+  }
+
   constructor(address _crowdsaleAddress, uint _investmentGoal) public {
     crowdsale = _crowdsaleAddress;
     investmentGoal = _investmentGoal;
@@ -37,18 +46,6 @@ contract EtherStorage is Ownable {
     return true;
   }
 
-  /// @notice Withdraws some tokens to owner
-  /// @param _amount Amount of tokens
-  /// @return Whether the withdraw operation was successful or not
-  function withdrawEtherToOwner(uint _amount) internal returns (bool success) {
-    test = msg.sender;
-    require(msg.sender != address(0));
-    require(_amount <= amountRaised);
-    amountRaised -= _amount;
-    owner.transfer(_amount);
-    return true;
-  }
-
   /// @notice Set new crowdsale address
   /// @param _crowdsale New address
   /// @return Whether the withdraw operation was successful or not
@@ -61,7 +58,7 @@ contract EtherStorage is Ownable {
   /// @notice Set new investment goal
   /// @param _investmentGoal New investment target
   /// @return Whether the set investment goal operation was successful or not
-  function setInvestmentGoal(uint _investmentGoal) private returns (bool success) {
+  function setInvestmentGoal(uint _investmentGoal) public returns (bool success) {
     require(_investmentGoal > 0);
     investmentGoal = _investmentGoal;
     return true;
