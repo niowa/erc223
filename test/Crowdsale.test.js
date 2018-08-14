@@ -129,11 +129,66 @@ contract('PlayChipCrowdsale', (accounts) => {
     });
   });
 
-  describe.only('#tokenFallback', () => {
-    it('throws in any token transaction', async () => {
-      const { crowdsaleContract, token } = await createNewContract(5, 0);
-      await token.generateTokens(accounts[0], 1000);
-      await assert.isRejected(token.transfer(crowdsaleContract.address, 100, { from: accounts[0] }));
+  describe('#tokenFallback', () => {
+    it('should decrease user token balance and total supply', async () => {
+      const amountTokens = 10000;
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, 0);
+      await token.generateTokens(accounts[0], amountTokens);
+      await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      const prevUserBalance = await token.balanceOf(accounts[0]);
+      const prevTotalSupply = await token.totalSupply();
+
+      await token.transfer(crowdsaleContract.address, amountTokens, { from: accounts[0] });
+
+      const currentUserBalance = await token.balanceOf(accounts[0]);
+      const currentTotalSupply = await token.totalSupply();
+
+      assert.equal(+prevUserBalance, +currentUserBalance + amountTokens);
+      assert.equal(+prevTotalSupply, +currentTotalSupply + amountTokens);
+    });
+    it('should increase user ether balance and decrease amount raised', async () => {
+      const amountTokens = 10000;
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, 0);
+      await token.generateTokens(accounts[0], amountTokens);
+      await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      const estimateEther = await crowdsaleContract.convertTokensToEth(amountTokens);
+
+      const prevUserBalance = web3.eth.getBalance(accounts[0]);
+      const prevTotalSupply = await etherStorageContract.amountRaised();
+
+      await token.transfer(crowdsaleContract.address, amountTokens, { from: accounts[0], gasPrice: 0 });
+
+      const currentUserBalance = web3.eth.getBalance(accounts[0]);
+      const currentTotalSupply = await etherStorageContract.amountRaised();
+
+      assert.equal(prevUserBalance.toString(), currentUserBalance.sub(estimateEther).toString());
+      assert.equal(prevTotalSupply.toString(), currentTotalSupply.add(estimateEther).toString());
+    });
+    it('reject if sender is not token address', async () => {
+      const amountTokens = 10000;
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, 0);
+      await token.generateTokens(accounts[0], amountTokens);
+      await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      await assert.isRejected(crowdsaleContract.tokenFallback(accounts[0], amountTokens, { from: accounts[0] }));
+    });
+    it('reject if amount of ether is zero', async () => {
+      const amountTokens = 1;
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, 0);
+      await token.generateTokens(accounts[0], amountTokens);
+      await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      await assert.isRejected(token.transfer(crowdsaleContract.address, amountTokens, { from: accounts[0], gasPrice: 0 }));
     });
   });
 });

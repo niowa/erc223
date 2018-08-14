@@ -7,7 +7,7 @@ module.exports = function(accounts) {
     investmentGoal: 40 ** 18,
     options: {
       gasPrice: 10 * 1000000000,
-      from: '0xf64aae0514df9428b742de3c635009d88936a209'
+      from: '0x9e83db85b464ab367e6f64d322ccd9f4c99a57c2'
     },
   };
 };

@@ -8,7 +8,6 @@ contract EtherStorage is Ownable {
   address public crowdsale;
   uint public amountRaised;
   uint public investmentGoal;
-  address public test;
 
   constructor(address _crowdsaleAddress, uint _investmentGoal) public {
     crowdsale = _crowdsaleAddress;
@@ -29,9 +28,9 @@ contract EtherStorage is Ownable {
   /// @param _to Address for withdraw
   /// @param _amount Amount of tokens
   /// @return Whether the withdraw operation was successful or not
-  function withdrawEtherToUser(address _to, uint _amount) internal returns (bool success) {
-    test = msg.sender;
+  function withdrawEtherToUser(address _to, uint _amount) external returns (bool success) {
     require(_to != address(0));
+    require(msg.sender == crowdsale);
     require(_amount <= amountRaised);
     amountRaised -= _amount;
     _to.transfer(_amount);
