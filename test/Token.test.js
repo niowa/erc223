@@ -181,6 +181,17 @@ contract('Token', function(accounts) {
 
       await assert.isRejected(token.burnTokens(initialAddresses[0], 0, { from: initialAddresses[0] }));
     });
+    it.only('reject if amount greater than user balance', async () => {
+      const token = await createTokenContract();
+      await token.setTokenGenerator(initialAddresses[0]);
+
+      await Promise.all([
+        token.generateTokens(initialAddresses[0], initialBalances[0]),
+        token.generateTokens(initialAddresses[1], initialBalances[1]),
+      ]);
+
+      await assert.isRejected(token.burnTokens(initialAddresses[0], initialBalances[0] + 1, { from: initialAddresses[0] }));
+    });
     it('reject if amount greater than total supply', async () => {
       const token = await createTokenContract();
       await token.setTokenGenerator(initialAddresses[0]);

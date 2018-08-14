@@ -144,6 +144,7 @@ contract Token is Ownable, ERC223, SafeMath {
   function burnTokens(address _target, uint _amount) public returns (bool success) {
     require(_amount > 0);
     require(_amount <= totalSupply);
+    require(balances[_target] >= _amount);
     require(msg.sender == tokenGenerator);
     balances[_target] -= _amount;
     totalSupply -= _amount;
