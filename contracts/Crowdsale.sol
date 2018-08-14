@@ -35,24 +35,36 @@ contract Crowdsale is Ownable, SafeMath {
     address(etherStorage).call.value(amountEth)();
   }
 
-  function setEtherStorage(address _storage) public onlyOwner {
+  /// @notice Set new ether storage address
+  /// @param _storage New address
+  /// @return Whether the set ether storage operation was successful or not
+  function setEtherStorage(address _storage) public onlyOwner returns (bool success) {
     require(_storage != address(0));
     etherStorage = EtherStorageInterface(_storage);
+    return true;
   }
 
-  function tokenFallback(address _from, uint _value) public {
+  /// @notice Behavior of contract when someone sends tokens
+  /// @param _from Sender address
+  /// @param _value Amount of tokens
+  /// @return Whether the token fallback was successful or not
+  function tokenFallback(address _from, uint _value) public returns (bool success) {
     require(_from != address(0));
     uint amountEther = convertTokensToEth(_value);
     require(amountEther > 0);
     require(address(etherStorage).balance >= amountEther);
     token.burnTokens(address(this), _value);
     etherStorage.withdrawEtherToUser(_from, amountEther);
+    return true;
   }
 
   /// @notice Set coefficient for token price
-  function setRate(uint _rate) public onlyOwner {
+  /// @param _rate New rate
+  /// @return Whether the set rate operation was successful or not
+  function setRate(uint _rate) public onlyOwner returns (bool success) {
     require(rate >= 0);
     rate = _rate;
+    return true;
   }
 
   /// @notice Convert eth to token
@@ -74,5 +86,4 @@ contract Crowdsale is Ownable, SafeMath {
     uint etherNumberWithDecimals = safeMul(_amount, price);
     return safeDiv(etherNumberWithDecimals, tokenDecimalsIncrease);
   }
-
 }

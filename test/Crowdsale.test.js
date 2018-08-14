@@ -109,7 +109,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
     });
     it('successful if lock period has ended', async () => {
-      const lockPeriod = 1; // 1 second
+      const lockPeriod = 2; // 2 seconds
       const mintedSupply = 20;
       const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, lockPeriod);
       await token.setTokenGenerator(crowdsaleContract.address);
@@ -117,7 +117,7 @@ contract('PlayChipCrowdsale', (accounts) => {
 
       await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei });
       await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
-      await sleep(1000);
+      await sleep(2000);
       await token.transfer(accounts[2], mintedSupply, { from: accounts[1] });
       await assert.eventually.equal(token.balanceOf(accounts[2]), mintedSupply);
     });

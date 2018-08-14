@@ -181,7 +181,7 @@ contract('Token', function(accounts) {
 
       await assert.isRejected(token.burnTokens(initialAddresses[0], 0, { from: initialAddresses[0] }));
     });
-    it.only('reject if amount greater than user balance', async () => {
+    it('reject if amount greater than user balance', async () => {
       const token = await createTokenContract();
       await token.setTokenGenerator(initialAddresses[0]);
 

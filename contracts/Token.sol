@@ -141,6 +141,10 @@ contract Token is Ownable, ERC223, SafeMath {
     return allowed[_owner][_spender];
   }
 
+  /// @notice Destruct tokens on passed address
+  /// @param _target The address of the account owning tokens
+  /// @param _amount Amount of burned tokens
+  /// @return Whether the burning was successful or not
   function burnTokens(address _target, uint _amount) public returns (bool success) {
     require(_amount > 0);
     require(_amount <= totalSupply);
@@ -173,7 +177,6 @@ contract Token is Ownable, ERC223, SafeMath {
   /// @param _from The address of the sender
   /// @param _to The address of the recipient
   /// @param _value The amount of token to be transferred
-  /// @return Whether the operation was successful on not
   function changeBalanceAfterTransfer(address _from, address _to, uint _value) private {
     require(balances[_from] >= _value);
     require(balances[_to] + _value > balances[_to]);
