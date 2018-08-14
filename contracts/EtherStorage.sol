@@ -26,11 +26,12 @@ contract EtherStorage is Ownable {
     _to.transfer(_amount);
   }
 
-  function withdrawEtherToOwner(uint _amount) public onlyOwner {
+  function withdrawEtherToOwner(uint _amount) public {
     require(msg.sender != address(0));
     require(_amount <= amountRaised);
+    require(msg.sender == crowdsale);
     amountRaised -= _amount;
-    msg.sender.transfer(_amount);
+    owner.transfer(_amount);
   }
 
   function setCrowdsale(address _crowdsale) public onlyOwner {

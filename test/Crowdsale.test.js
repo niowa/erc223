@@ -86,7 +86,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       const senderStartBalance = web3.eth.getBalance(accounts[1]);
       await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
       const senderBalance = web3.eth.getBalance(accounts[1]);
-      await assert.equal(senderBalance.toNumber(), senderStartBalance.sub(etherInWei).toNumber());
+      await assert.equal(senderBalance.toString(), senderStartBalance.sub(etherInWei).toString());
     });
     it('transfers ether to ether storage', async () => {
       const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, 0);
@@ -96,7 +96,7 @@ contract('PlayChipCrowdsale', (accounts) => {
       const oldEtherStorageBalance = web3.eth.getBalance(etherStorageContract.address);
       await crowdsaleContract.sendTransaction({ from: accounts[3], value: etherInWei });
       const newEtherStorageBalance = web3.eth.getBalance(etherStorageContract.address);
-      await assert.equal(oldEtherStorageBalance.toNumber(), newEtherStorageBalance.sub(etherInWei).toNumber());
+      await assert.equal(oldEtherStorageBalance.toString(), newEtherStorageBalance.sub(etherInWei).toString());
     });
     it('reject if lock period is active', async () => {
       const lockPeriod = 12; // seconds
