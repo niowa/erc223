@@ -58,7 +58,7 @@ contract EtherStorage is Ownable {
   /// @notice Set new investment goal
   /// @param _investmentGoal New investment target
   /// @return Whether the set investment goal operation was successful or not
-  function setInvestmentGoal(uint _investmentGoal) public returns (bool success) {
+  function setInvestmentGoal(uint _investmentGoal) public onlyOwner returns (bool success) {
     require(_investmentGoal > 0);
     investmentGoal = _investmentGoal;
     return true;

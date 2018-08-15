@@ -58,6 +58,26 @@ contract('EtherStorage', (accounts) => {
       await assert.eventually.equal(etherStorageContract.crowdsale(), accounts[1]);
     });
   });
+  describe('#setInvestmentGoal', () => {
+    const investmentGoal = 200;
+    it('should set investment goal', async () => {
+      const { etherStorageContract } = await createNewContract();
+      await etherStorageContract.setInvestmentGoal(investmentGoal);
+      const newInvestmentGoal = await etherStorageContract.investmentGoal();
+      assert.equal(+newInvestmentGoal, investmentGoal);
+    });
+    it('available only for creator', async () => {
+      const { etherStorageContract } = await createNewContract();
+
+      await assert.isRejected(etherStorageContract.setInvestmentGoal(investmentGoal, { from: accounts[1]}));
+    });
+    it('reject if investment goal is non-natural number', async () => {
+      const investmentGoal = 0;
+      const { etherStorageContract } = await createNewContract();
+
+      await assert.isRejected(etherStorageContract.setInvestmentGoal(investmentGoal));
+    });
+  });
   describe('#invest', () => {
     it('should increase amount raised', async () => {
       const { etherStorageContract } = await createNewContract(5, 0);
