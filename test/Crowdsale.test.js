@@ -6,15 +6,15 @@ const assert = chai.assert;
 
 const Token = artifacts.require('Token.sol');
 const Crowdsale = artifacts.require('Crowdsale.sol');
+const EtherStorage = artifacts.require('EtherStorage.sol');
 
 const tokenCost = 100;
 const newRate = 3;
-const etherInWei = 100;
+const etherInWei = 1000;
 
 function sleep(ms = 0) {
   return new Promise(r => setTimeout(r, ms));
 }
-
 
 const createNewContract = async (
   decimals = 0,
@@ -26,8 +26,9 @@ const createNewContract = async (
 ) => {
   const token = await Token.new(name, symbol, decimals, lockPeriod);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
+  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address);
 
-  return { token, crowdsaleContract };
+  return { token, crowdsaleContract, etherStorageContract };
 };
 
 contract('PlayChipCrowdsale', (accounts) => {
@@ -66,49 +67,57 @@ contract('PlayChipCrowdsale', (accounts) => {
   });
   describe('#invest', () => {
     it('works if token decimal number is more than 0', async () => {
-      const { crowdsaleContract, token } = await createNewContract(5, 0);
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, 0);
       await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
 
-      const expectedBalance = await crowdsaleContract.convertEthToTokens(etherInWei);
+      const expectedTokenBalance = await crowdsaleContract.convertEthToTokens(etherInWei);
       await sleep(1000);
-      await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei });
-      const currentBalance = await token.balanceOf(accounts[1]);
-      await assert.isBelow(+currentBalance, +expectedBalance);
+
+      await crowdsaleContract.sendTransaction({ from: accounts[3], value: etherInWei });
+      const currentTokenBalance = await token.balanceOf(accounts[1]);
+      await assert.isBelow(+currentTokenBalance, +expectedTokenBalance);
     });
     it('decreases investor balance', async () => {
-      const { crowdsaleContract, token } = await createNewContract(5, 0);
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, 0);
       await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+
       const senderStartBalance = web3.eth.getBalance(accounts[1]);
       await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
       const senderBalance = web3.eth.getBalance(accounts[1]);
-      await assert.equal(senderBalance.toNumber(), senderStartBalance.sub(etherInWei).toNumber());
+      await assert.equal(senderBalance.toString(), senderStartBalance.sub(etherInWei).toString());
     });
-    it('transfers ether to withdrawal address', async () => {
-      const { crowdsaleContract, token } = await createNewContract(5, 0);
+    it('transfers ether to ether storage', async () => {
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, 0);
       await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
 
-      const withdrawStartBalance = web3.eth.getBalance(await crowdsaleContract.withdrawAddress());
-      await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
-
-      const withdrawBalance = web3.eth.getBalance(await crowdsaleContract.withdrawAddress());
-      await assert.equal(withdrawBalance.toNumber(), withdrawStartBalance.add(tokenCost).toNumber());
+      const oldEtherStorageBalance = web3.eth.getBalance(etherStorageContract.address);
+      await crowdsaleContract.sendTransaction({ from: accounts[3], value: etherInWei });
+      const newEtherStorageBalance = web3.eth.getBalance(etherStorageContract.address);
+      await assert.equal(oldEtherStorageBalance.toString(), newEtherStorageBalance.sub(etherInWei).toString());
     });
     it('reject if lock period is active', async () => {
       const lockPeriod = 12; // seconds
       const mintedSupply = 20;
-      const { crowdsaleContract, token } = await createNewContract(5, lockPeriod);
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, lockPeriod);
       await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+
       await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei });
       await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
     });
     it('successful if lock period has ended', async () => {
-      const lockPeriod = 1; // 1 second
+      const lockPeriod = 2; // 2 seconds
       const mintedSupply = 20;
-      const { crowdsaleContract, token } = await createNewContract(5, lockPeriod);
+      const { crowdsaleContract, token, etherStorageContract } = await createNewContract(5, lockPeriod);
       await token.setTokenGenerator(crowdsaleContract.address);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+
       await crowdsaleContract.sendTransaction({ from: accounts[1], value: etherInWei });
       await assert.isRejected(token.transfer(accounts[2], mintedSupply, { from: accounts[1] }));
-      await sleep(1000);
+      await sleep(2000);
       await token.transfer(accounts[2], mintedSupply, { from: accounts[1] });
       await assert.eventually.equal(token.balanceOf(accounts[2]), mintedSupply);
     });

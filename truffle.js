@@ -10,14 +10,14 @@ module.exports = {
       port: 8545,
       network_id: 4,
       gas: 4612388,
-      from: "0x4514c7316c5d80bbdf04777bb21d0774b15576c6 "
+      from: "0x80d9b898c6318767b014df4c8fff98cb457baba4 "
     },
     live: {
       host: "localhost",
       port: 8545,
       network_id: 1,
       gas: 3000000,
-      from: "0x4514c7316c5d80bbdf04777bb21d0774b15576c6",
+      from: "0x80d9b898c6318767b014df4c8fff98cb457baba4",
     }
   }
 };
