@@ -23,10 +23,11 @@ const createNewContract = async (
   rate = 2,
   name = 'PlayChip',
   symbol = 'CHIP',
+  investmentGoal = etherInWei * 3,
 ) => {
   const token = await Token.new(name, symbol, decimals, lockPeriod);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
-  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address);
+  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address, investmentGoal);
 
   return { token, crowdsaleContract, etherStorageContract };
 };
@@ -40,8 +41,9 @@ contract('EtherStorage', (accounts) => {
   });
   describe('#constructor', () => {
     it('check props after crating', async () => {
-      const etherStorage = await EtherStorage.new(accounts[1]);
+      const etherStorage = await EtherStorage.new(accounts[1], etherInWei);
       assert.equal(await etherStorage.crowdsale(), accounts[1]);
+      assert.equal(await etherStorage.investmentGoal(), etherInWei);
     });
   });
   describe('#setCrowdsale', () => {
@@ -56,26 +58,56 @@ contract('EtherStorage', (accounts) => {
       await assert.eventually.equal(etherStorageContract.crowdsale(), accounts[1]);
     });
   });
+  describe('#setInvestmentGoal', () => {
+    const investmentGoal = 200;
+    it('should set investment goal', async () => {
+      const { etherStorageContract } = await createNewContract();
+      await etherStorageContract.setInvestmentGoal(investmentGoal);
+      const newInvestmentGoal = await etherStorageContract.investmentGoal();
+      assert.equal(+newInvestmentGoal, investmentGoal);
+    });
+    it('available only for creator', async () => {
+      const { etherStorageContract } = await createNewContract();
+
+      await assert.isRejected(etherStorageContract.setInvestmentGoal(investmentGoal, { from: accounts[1]}));
+    });
+    it('reject if investment goal is non-natural number', async () => {
+      const investmentGoal = 0;
+      const { etherStorageContract } = await createNewContract();
+
+      await assert.isRejected(etherStorageContract.setInvestmentGoal(investmentGoal));
+    });
+  });
   describe('#invest', () => {
     it('should increase amount raised', async () => {
-      const {etherStorageContract} = await createNewContract(5, 0);
+      const { etherStorageContract } = await createNewContract(5, 0);
       const prevBalance = await etherStorageContract.amountRaised();
       await etherStorageContract.sendTransaction({from: accounts[1], value: etherInWei});
       const currentBalance = await etherStorageContract.amountRaised();
       assert.equal(+currentBalance, +prevBalance.add(etherInWei));
     });
     it('decreases investor balance', async () => {
-      const {etherStorageContract} = await createNewContract(5, 0);
+      const { etherStorageContract } = await createNewContract(5, 0);
       const prevBalance = web3.eth.getBalance(accounts[1]);
       await etherStorageContract.sendTransaction({from: accounts[1], value: etherInWei, gasPrice: 0});
       const currentBalance = web3.eth.getBalance(accounts[1]);
       assert.equal(currentBalance.toString(), prevBalance.sub(etherInWei).toString());
     });
+    it('should transfer ether to owner when contract reaches investment goal', async () => {
+      const bigBet = etherInWei * 3;
+      const { etherStorageContract } = await createNewContract(5, 0);
+      const prevBalance = web3.eth.getBalance(accounts[0]);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: bigBet });
+      const currentBalance = web3.eth.getBalance(accounts[0]);
+      assert.equal(currentBalance.toString(), prevBalance.add(bigBet).toString());
+    });
   });
   describe('#withdrawEtherToUser', () => {
     it('should decrease ether in ether storage', async () => {
-      const { etherStorageContract } = await createNewContract(5, 0);
+      const { etherStorageContract, crowdsaleContract } = await createNewContract(5, 0);
       await etherStorageContract.setCrowdsale(accounts[0]);
+      await crowdsaleContract.setEtherStorage(etherStorageContract.address);
+
       await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
       const prevBalance = await etherStorageContract.amountRaised();
       await etherStorageContract.withdrawEtherToUser(accounts[1], etherInWei, { from: accounts[0] });
@@ -114,38 +146,21 @@ contract('EtherStorage', (accounts) => {
     it('should decrease ether in ether storage', async () => {
       const { etherStorageContract } = await createNewContract(5, 0);
       await etherStorageContract.setCrowdsale(accounts[1]);
+      await etherStorageContract.setInvestmentGoal(etherInWei);
       await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
-      const prevBalance = await etherStorageContract.amountRaised();
-      await etherStorageContract.withdrawEtherToOwner(etherInWei, { from: accounts[1] });
+
       const currentBalance = await etherStorageContract.amountRaised();
-      assert.equal(+currentBalance, +prevBalance.sub(etherInWei));
+      assert.equal(0, +currentBalance);
     });
-    it('should decrease owner balance', async () => {
+    it('should increase owner balance', async () => {
       const { etherStorageContract } = await createNewContract(5, 0);
       await etherStorageContract.setCrowdsale(accounts[1]);
-      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
+      await etherStorageContract.setInvestmentGoal(etherInWei);
       const prevBalance = web3.eth.getBalance(accounts[0]);
-      await etherStorageContract.withdrawEtherToOwner(etherInWei, { from: accounts[1] });
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
+
       const currentBalance = web3.eth.getBalance(accounts[0]);
       assert.equal(currentBalance.toString(), prevBalance.add(etherInWei).toString());
-    });
-    it('reject if amount for transfer greater than amount raised', async () => {
-      const { etherStorageContract } = await createNewContract(5, 0);
-      await etherStorageContract.setCrowdsale(accounts[1]);
-      await etherStorageContract.sendTransaction({ from: accounts[0], value: etherInWei, gasPrice: 0 });
-      await assert.isRejected(etherStorageContract.withdrawEtherToOwner(etherInWei * 2, { from: accounts[0] }));
-    });
-    it('reject if amount for transfer greater than amount raised', async () => {
-      const { etherStorageContract } = await createNewContract(5, 0);
-      await etherStorageContract.setCrowdsale(accounts[0]);
-      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
-      await assert.isRejected(etherStorageContract.withdrawEtherToOwner(accounts[1], etherInWei * 2, { from: accounts[0] }));
-    });
-    it('reject if sender is not crowdsale', async () => {
-      const { etherStorageContract } = await createNewContract(5, 0);
-      await etherStorageContract.setCrowdsale(accounts[0]);
-      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei, gasPrice: 0 });
-      await assert.isRejected(etherStorageContract.withdrawEtherToOwner(accounts[1], etherInWei, { from: accounts[1] }));
     });
   });
 });

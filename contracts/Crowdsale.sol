@@ -48,14 +48,13 @@ contract Crowdsale is Ownable, SafeMath {
   /// @param _from Sender address
   /// @param _value Amount of tokens
   /// @return Whether the token fallback was successful or not
-  function tokenFallback(address _from, uint _value) public returns (bool success) {
+  function tokenFallback(address _from, uint _value, bytes _data) public {
+    require(msg.sender == address(token));
     require(_from != address(0));
     uint amountEther = convertTokensToEth(_value);
     require(amountEther > 0);
-    require(address(etherStorage).balance >= amountEther);
     token.burnTokens(address(this), _value);
     etherStorage.withdrawEtherToUser(_from, amountEther);
-    return true;
   }
 
   /// @notice Set coefficient for token price
