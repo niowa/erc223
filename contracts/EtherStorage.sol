@@ -52,13 +52,13 @@ contract EtherStorage is Ownable, SafeMath {
 
   /// @notice Calculate coefficient for current and latest investments
   /// @return Calculated coefficient
-  function calculateLatestProfitCoefficient() internal returns (uint coeficient) {
+  function calculateLatestProfitCoefficient() internal returns (uint coefficient) {
     return safeDiv(msg.value, safeSub(now, investments[investments.length - 1].diffDate));
   }
 
   /// @notice Calculate coefficient for array of investments
   /// @return Calculated coefficient
-  function calculateCommonProfitCoefficient() internal returns (uint coeficient) {
+  function calculateCommonProfitCoefficient() internal returns (uint coefficient) {
     uint sumEther = 0;
     uint sumTime = 0;
     for (uint i = 0; i < investments.length - 1; i++) {
