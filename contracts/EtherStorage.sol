@@ -38,18 +38,26 @@ contract EtherStorage is Ownable, SafeMath {
     }
   }
 
+  /// @notice Check if users send less ether
+  /// @return Whether investment fallen was successful or not
   function isInvestmentFallen() internal returns (bool success) {
-    if (investments.length == investmentSample && calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()) {
+    if (
+      investments.length == investmentSample &&
+      calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()) {
       return true;
     } else {
       return false;
     }
   }
 
+  /// @notice Calculate coefficient for current and latest investments
+  /// @return Calculated coefficient
   function calculateLatestProfitCoefficient() internal returns (uint coeficient) {
     return safeDiv(msg.value, safeSub(now, investments[investments.length - 1].diffDate));
   }
 
+  /// @notice Calculate coefficient for array of investments
+  /// @return Calculated coefficient
   function calculateCommonProfitCoefficient() internal returns (uint coeficient) {
     uint sumEther = 0;
     uint sumTime = 0;
@@ -62,6 +70,8 @@ contract EtherStorage is Ownable, SafeMath {
     return safeDiv(safeDiv(sumEther, investmentSample), safeDiv(sumTime, investments.length - 1));
   }
 
+  /// @notice Push to array data about current investment
+  /// @return Whether save operation was successful or not
   function saveLatestInvestment() internal returns (bool success) {
     if (investments.length >= investmentSample) {
       removeFromInvestments(0);
@@ -71,6 +81,9 @@ contract EtherStorage is Ownable, SafeMath {
     return true;
   }
 
+  /// @notice Delete passed element from investment array
+  /// @param index Index of array element
+  /// @return Whether remove operation was successful or not
   function removeFromInvestments(uint index) internal returns (bool success) {
     if (index >= investments.length) return false;
 
