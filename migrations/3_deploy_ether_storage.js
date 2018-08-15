@@ -7,7 +7,15 @@ module.exports = (deployer, network, accounts) => {
     const config = getConfig(accounts);
 
     const crowdsaleContract = await Crowdsale.deployed();
-    const etherStorageContract = await deployer.deploy(EtherStorage, crowdsaleContract.address, config.investmentGoal, config.options);
+
+    const etherStorageContract = await deployer.deploy(
+      EtherStorage,
+      crowdsaleContract.address,
+      config.investmentSample,
+      config.investmentGoal,
+      config.options
+    );
+
     await crowdsaleContract.setEtherStorage(etherStorageContract.address, config.options);
   });
 };
