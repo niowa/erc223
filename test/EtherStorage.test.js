@@ -104,6 +104,36 @@ contract('EtherStorage', (accounts) => {
       const currentBalance = web3.eth.getBalance(accounts[0]);
       assert.equal(currentBalance.toString(), prevBalance.add(bigBet).toString());
     });
+    it('should save data about investment', async () => {
+      const { etherStorageContract } = await createNewContract(5, 0);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      const investments = await etherStorageContract.investments.call([0]);
+      assert.equal(+investments[0], etherInWei);
+    });
+    it('should save data about investment', async () => {
+      const { etherStorageContract } = await createNewContract(5, 0);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      const investments = await etherStorageContract.investments.call([0]);
+      assert.equal(+investments[0], etherInWei);
+    });
+    it('should not to withdraw if investments grow', async () => {
+      const { etherStorageContract } = await createNewContract(5, 0);
+      await etherStorageContract.setInvestmentGoal(etherInWei * 10);
+
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      const amountRaised = await etherStorageContract.amountRaised();
+
+      assert.equal(+amountRaised, etherInWei * 4);
+    });
   });
   describe('#withdrawEtherToUser', () => {
     it('should decrease ether in ether storage', async () => {
@@ -164,6 +194,26 @@ contract('EtherStorage', (accounts) => {
 
       const currentBalance = web3.eth.getBalance(accounts[0]);
       assert.equal(currentBalance.toString(), prevBalance.add(etherInWei).toString());
+    });
+    it('should increase owner balance if investment have fallen', async () => {
+      const { etherStorageContract } = await createNewContract(5, 0);
+      await etherStorageContract.setInvestmentGoal(etherInWei * 10);
+
+      const prevBalance = web3.eth.getBalance(accounts[0]);
+
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei / 2 });
+
+      const amountRaised = await etherStorageContract.amountRaised();
+      const currentBalance = web3.eth.getBalance(accounts[0]);
+
+      assert.equal(+amountRaised, 0);
+      assert.equal(currentBalance.toString(), prevBalance.add(etherInWei * 3 + (etherInWei / 2)));
     });
   });
 });

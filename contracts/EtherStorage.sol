@@ -31,7 +31,7 @@ contract EtherStorage is Ownable, SafeMath {
   function() public payable {
     amountRaised += msg.value;
 
-    if (isInvestmentFallen() || amountRaised >= investmentGoal) {
+    if (amountRaised >= investmentGoal || isInvestmentFallen()) {
       withdrawEtherToOwner(amountRaised);
     } else {
       saveLatestInvestment();
@@ -39,10 +39,10 @@ contract EtherStorage is Ownable, SafeMath {
   }
 
   function isInvestmentFallen() internal returns (bool success) {
-    if (investments.length < investmentSample || calculateCommonProfitCoefficient() <= calculateLatestProfitCoefficient()) {
-      return false;
-    } else {
+    if (investments.length == investmentSample && calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()) {
       return true;
+    } else {
+      return false;
     }
   }
 
@@ -59,7 +59,7 @@ contract EtherStorage is Ownable, SafeMath {
     }
     sumEther += investments[investments.length - 1].amount;
 
-    return safeDiv(sumEther, safeDiv(sumTime, investments.length - 1));
+    return safeDiv(safeDiv(sumEther, investmentSample), safeDiv(sumTime, investments.length - 1));
   }
 
   function saveLatestInvestment() internal returns (bool success) {
