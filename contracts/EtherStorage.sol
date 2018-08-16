@@ -19,6 +19,8 @@ contract EtherStorage is Ownable, SafeMath {
   uint public amountLuckyInvestments;
   uint public investmentsCounter;
 
+  event LogFundTransfer(address investor, uint amount);
+
   Investment[] public investments;
 
   constructor(
@@ -38,7 +40,9 @@ contract EtherStorage is Ownable, SafeMath {
 
   /// @notice Public interface for investment
   function() public payable {
+    require(msg.data.length == 0);
     amountRaised += msg.value;
+    emit LogFundTransfer(msg.sender, msg.value); // solhint-disable-line
 
     if (amountRaised >= investmentGoal || isInvestmentFallen()) {
       withdrawEtherToOwner(amountRaised);
