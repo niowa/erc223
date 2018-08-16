@@ -16,15 +16,24 @@ contract EtherStorage is Ownable, SafeMath {
   uint public amountRaised;
   uint public investmentGoal;
   uint public investmentSample;
+  uint public investmentsWithoutCheck;
+  uint public investmentsCounter;
 
   Investment[] public investments;
 
-  constructor(address _crowdsaleAddress, uint _investmentGoal, uint _investmentSample) public {
+  constructor(
+    address _crowdsaleAddress,
+    uint _investmentGoal,
+    uint _investmentSample,
+    uint _investmentsWithoutCheck
+  ) public {
     crowdsale = _crowdsaleAddress;
     investmentGoal = _investmentGoal;
     investmentSample = _investmentSample;
+    investmentsWithoutCheck = _investmentsWithoutCheck;
     owner = msg.sender;
     amountRaised = 0;
+    investmentsCounter = 0;
   }
 
   /// @notice Public interface for investment
@@ -43,6 +52,7 @@ contract EtherStorage is Ownable, SafeMath {
   function isInvestmentFallen() internal returns (bool success) {
     if (
       investments.length == investmentSample &&
+      investmentsWithoutCheck % ++investmentsCounter == 0  &&
       calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()) {
       return true;
     } else {
@@ -132,6 +142,12 @@ contract EtherStorage is Ownable, SafeMath {
   function setInvestmentGoal(uint _investmentGoal) public onlyOwner returns (bool success) {
     require(_investmentGoal > 0);
     investmentGoal = _investmentGoal;
+    return true;
+  }
+
+  function setInvestmentsWithoutCheck(uint _investmentsWithoutCheck) public onlyOwner returns (bool success) {
+    require(_investmentsWithoutCheck > 0);
+    investmentsWithoutCheck = _investmentsWithoutCheck;
     return true;
   }
 }
