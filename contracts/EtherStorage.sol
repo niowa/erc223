@@ -9,7 +9,7 @@ contract EtherStorage is Ownable, SafeMath {
 
   struct Investment {
     uint amount;
-    uint diffDate;
+    uint investmentDate;
   }
 
   address public crowdsale;
@@ -53,7 +53,7 @@ contract EtherStorage is Ownable, SafeMath {
   /// @notice Calculate coefficient for current and latest investments
   /// @return Calculated coefficient
   function calculateLatestProfitCoefficient() internal returns (uint coefficient) {
-    return safeDiv(msg.value, safeSub(now, investments[investments.length - 1].diffDate));
+    return safeDiv(msg.value, safeSub(now, investments[investments.length - 1].investmentDate));
   }
 
   /// @notice Calculate coefficient for array of investments
@@ -63,7 +63,7 @@ contract EtherStorage is Ownable, SafeMath {
     uint sumTime = 0;
     for (uint i = 0; i < investments.length - 1; i++) {
       sumEther += investments[i].amount;
-      sumTime += safeSub(investments[i + 1].diffDate, investments[i].diffDate);
+      sumTime += safeSub(investments[i + 1].investmentDate, investments[i].investmentDate);
     }
     sumEther += investments[investments.length - 1].amount;
 
