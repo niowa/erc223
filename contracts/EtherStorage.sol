@@ -16,7 +16,7 @@ contract EtherStorage is Ownable, SafeMath {
   uint public amountRaised;
   uint public investmentGoal;
   uint public investmentSample;
-  uint public investmentsWithoutCheck;
+  uint public amountLuckyInvestments;
   uint public investmentsCounter;
 
   Investment[] public investments;
@@ -25,12 +25,12 @@ contract EtherStorage is Ownable, SafeMath {
     address _crowdsaleAddress,
     uint _investmentGoal,
     uint _investmentSample,
-    uint _investmentsWithoutCheck
+    uint _amountLuckyInvestments
   ) public {
     crowdsale = _crowdsaleAddress;
     investmentGoal = _investmentGoal;
     investmentSample = _investmentSample;
-    investmentsWithoutCheck = _investmentsWithoutCheck;
+    amountLuckyInvestments = _amountLuckyInvestments;
     owner = msg.sender;
     amountRaised = 0;
     investmentsCounter = 0;
@@ -52,8 +52,9 @@ contract EtherStorage is Ownable, SafeMath {
   function isInvestmentFallen() internal returns (bool success) {
     if (
       investments.length == investmentSample &&
-      investmentsWithoutCheck % ++investmentsCounter == 0  &&
-      calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()) {
+      ++investmentsCounter % (amountLuckyInvestments + 1) == 0  &&
+      calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()
+    ) {
       return true;
     } else {
       return false;
@@ -146,14 +147,13 @@ contract EtherStorage is Ownable, SafeMath {
   }
 
   function setInvestmentSample(uint _investmentSample) public onlyOwner returns (bool success) {
-    require(_investmentSample > 0);
+    require(_investmentSample > 1);
     investmentSample = _investmentSample;
     return true;
   }
 
-  function setInvestmentsWithoutCheck(uint _investmentsWithoutCheck) public onlyOwner returns (bool success) {
-    require(_investmentsWithoutCheck > 0);
-    investmentsWithoutCheck = _investmentsWithoutCheck;
+  function setAmountLuckyInvestments(uint _amountLuckyInvestments) public onlyOwner returns (bool success) {
+    amountLuckyInvestments = _amountLuckyInvestments;
     return true;
   }
 }

@@ -13,7 +13,7 @@ module.exports = (deployer, network, accounts) => {
       crowdsaleContract.address,
       config.investmentSample,
       config.investmentGoal,
-      config.investmentsWithoutCheck,
+      config.amountLuckyInvestments,
       config.options
     );
 
