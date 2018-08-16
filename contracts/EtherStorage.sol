@@ -145,6 +145,12 @@ contract EtherStorage is Ownable, SafeMath {
     return true;
   }
 
+  function setInvestmentSample(uint _investmentSample) public onlyOwner returns (bool success) {
+    require(_investmentSample > 0);
+    investmentSample = _investmentSample;
+    return true;
+  }
+
   function setInvestmentsWithoutCheck(uint _investmentsWithoutCheck) public onlyOwner returns (bool success) {
     require(_investmentsWithoutCheck > 0);
     investmentsWithoutCheck = _investmentsWithoutCheck;
