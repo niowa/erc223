@@ -11,6 +11,7 @@ const EtherStorage = artifacts.require('EtherStorage.sol');
 const tokenCost = 100;
 const newRate = 3;
 const etherInWei = 1000;
+const investmentSample = 3;
 
 function sleep(ms = 0) {
   return new Promise(r => setTimeout(r, ms));
@@ -24,10 +25,11 @@ const createNewContract = async (
   name = 'PlayChip',
   symbol = 'CHIP',
   investmentGoal = etherInWei * 3,
+  investmentSample = 3,
 ) => {
   const token = await Token.new(name, symbol, decimals, lockPeriod);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
-  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address, investmentGoal);
+  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address, investmentGoal, investmentSample);
 
   return { token, crowdsaleContract, etherStorageContract };
 };

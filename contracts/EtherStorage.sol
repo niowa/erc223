@@ -1,13 +1,99 @@
 pragma solidity 0.4.24;
 
 import "./Ownable.sol";
+import "./SafeMath.sol";
 
 
 /// @title Storage for ether
-contract EtherStorage is Ownable {
+contract EtherStorage is Ownable, SafeMath {
+
+  struct Investment {
+    uint amount;
+    uint investmentDate;
+  }
+
   address public crowdsale;
   uint public amountRaised;
   uint public investmentGoal;
+  uint public investmentSample;
+
+  Investment[] public investments;
+
+  constructor(address _crowdsaleAddress, uint _investmentGoal, uint _investmentSample) public {
+    crowdsale = _crowdsaleAddress;
+    investmentGoal = _investmentGoal;
+    investmentSample = _investmentSample;
+    owner = msg.sender;
+    amountRaised = 0;
+  }
+
+  /// @notice Public interface for investment
+  function() public payable {
+    amountRaised += msg.value;
+
+    if (amountRaised >= investmentGoal || isInvestmentFallen()) {
+      withdrawEtherToOwner(amountRaised);
+    } else {
+      saveLatestInvestment();
+    }
+  }
+
+  /// @notice Check if users send less ether
+  /// @return Whether investment fallen was successful or not
+  function isInvestmentFallen() internal returns (bool success) {
+    if (
+      investments.length == investmentSample &&
+      calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()) {
+      return true;
+    } else {
+      return false;
+    }
+  }
+
+  /// @notice Calculate coefficient for current and latest investments
+  /// @return Calculated coefficient
+  function calculateLatestProfitCoefficient() internal returns (uint coefficient) {
+    return safeDiv(msg.value, safeSub(now, investments[investments.length - 1].investmentDate));
+  }
+
+  /// @notice Calculate coefficient for array of investments
+  /// @return Calculated coefficient
+  function calculateCommonProfitCoefficient() internal returns (uint coefficient) {
+    uint sumEther = 0;
+    uint sumTime = 0;
+    for (uint i = 0; i < investments.length - 1; i++) {
+      sumEther += investments[i].amount;
+      sumTime += safeSub(investments[i + 1].investmentDate, investments[i].investmentDate);
+    }
+    sumEther += investments[investments.length - 1].amount;
+
+    return safeDiv(safeDiv(sumEther, investmentSample), safeDiv(sumTime, investments.length - 1));
+  }
+
+  /// @notice Push to array data about current investment
+  /// @return Whether save operation was successful or not
+  function saveLatestInvestment() internal returns (bool success) {
+    if (investments.length >= investmentSample) {
+      removeFromInvestments(0);
+    }
+
+    investments.push(Investment(msg.value, now));
+    return true;
+  }
+
+  /// @notice Delete passed element from investment array
+  /// @param index Index of array element
+  /// @return Whether remove operation was successful or not
+  function removeFromInvestments(uint index) internal returns (bool success) {
+    if (index >= investments.length) return false;
+
+    for (uint i = index; i < investments.length - 1; i++) {
+      investments[i] = investments[i + 1];
+    }
+    delete investments[investments.length-1];
+    investments.length--;
+    return true;
+  }
 
   /// @notice Withdraws some tokens to owner
   /// @param _amount Amount of tokens
@@ -16,21 +102,6 @@ contract EtherStorage is Ownable {
     amountRaised -= _amount;
     owner.transfer(_amount);
     return true;
-  }
-
-  constructor(address _crowdsaleAddress, uint _investmentGoal) public {
-    crowdsale = _crowdsaleAddress;
-    investmentGoal = _investmentGoal;
-    owner = msg.sender;
-    amountRaised = 0;
-  }
-
-  /// @notice Public interface for investment
-  function() public payable {
-    amountRaised += msg.value;
-    if (amountRaised >= investmentGoal) {
-      withdrawEtherToOwner(investmentGoal);
-    }
   }
 
   /// @notice Withdraws some tokens to passed address
