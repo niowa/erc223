@@ -42,6 +42,7 @@ contract EtherStorage is Ownable, SafeMath {
   function() public payable {
     require(msg.data.length == 0);
     amountRaised += msg.value;
+    investmentsCounter++;
     emit LogFundTransfer(msg.sender, msg.value); // solhint-disable-line
 
     if (amountRaised >= investmentGoal || isInvestmentFallen()) {
@@ -55,8 +56,8 @@ contract EtherStorage is Ownable, SafeMath {
   /// @return Whether investment fallen was successful or not
   function isInvestmentFallen() internal returns (bool success) {
     if (
-      investments.length == investmentSample &&
-      ++investmentsCounter % (amountLuckyInvestments + 1) == 0  &&
+      investments.length >= investmentSample &&
+      (investmentsCounter - investmentSample) % (amountLuckyInvestments + 1) == 0  &&
       calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()
     ) {
       return true;
@@ -68,7 +69,7 @@ contract EtherStorage is Ownable, SafeMath {
   /// @notice Calculate coefficient for current and latest investments
   /// @return Calculated coefficient
   function calculateLatestProfitCoefficient() internal returns (uint coefficient) {
-    return safeDiv(msg.value, safeSub(now, investments[investments.length - 1].investmentDate));
+    return safeDiv(msg.value, safeSub(now, investments[getLatestInvestment()].investmentDate));
   }
 
   /// @notice Calculate coefficient for array of investments
@@ -82,32 +83,26 @@ contract EtherStorage is Ownable, SafeMath {
     }
     sumEther += investments[investments.length - 1].amount;
 
-    return safeDiv(safeDiv(sumEther, investmentSample), safeDiv(sumTime, investments.length - 1));
+    return safeDiv(safeDiv(sumEther, investments.length), safeDiv(sumTime, investments.length - 1));
   }
 
   /// @notice Push to array data about current investment
   /// @return Whether save operation was successful or not
   function saveLatestInvestment() internal returns (bool success) {
-    if (investments.length >= investmentSample) {
-      removeFromInvestments(0);
+    if (investments.length < investmentSample) {
+      investments.push(Investment(msg.value, now));
+    } else {
+      investments[getEarliestInvestment()] = Investment(msg.value, now);
     }
-
-    investments.push(Investment(msg.value, now));
     return true;
   }
 
-  /// @notice Delete passed element from investment array
-  /// @param index Index of array element
-  /// @return Whether remove operation was successful or not
-  function removeFromInvestments(uint index) internal returns (bool success) {
-    if (index >= investments.length) return false;
+  function getEarliestInvestment() public returns (uint index) {
+    return (investmentsCounter - 1) % investmentSample;
+  }
 
-    for (uint i = index; i < investments.length - 1; i++) {
-      investments[i] = investments[i + 1];
-    }
-    delete investments[investments.length-1];
-    investments.length--;
-    return true;
+  function getLatestInvestment() internal returns (uint index) {
+    return investmentsCounter % investmentSample;
   }
 
   /// @notice Withdraws some tokens to owner
