@@ -16,20 +16,33 @@ contract EtherStorage is Ownable, SafeMath {
   uint public amountRaised;
   uint public investmentGoal;
   uint public investmentSample;
+  uint public amountLuckyInvestments;
+  uint public investmentsCounter;
+
+  event LogFundTransfer(address investor, uint amount);
 
   Investment[] public investments;
 
-  constructor(address _crowdsaleAddress, uint _investmentGoal, uint _investmentSample) public {
+  constructor(
+    address _crowdsaleAddress,
+    uint _investmentGoal,
+    uint _investmentSample,
+    uint _amountLuckyInvestments
+  ) public {
     crowdsale = _crowdsaleAddress;
     investmentGoal = _investmentGoal;
     investmentSample = _investmentSample;
+    amountLuckyInvestments = _amountLuckyInvestments;
     owner = msg.sender;
     amountRaised = 0;
+    investmentsCounter = 0;
   }
 
   /// @notice Public interface for investment
   function() public payable {
+    require(msg.data.length == 0);
     amountRaised += msg.value;
+    emit LogFundTransfer(msg.sender, msg.value); // solhint-disable-line
 
     if (amountRaised >= investmentGoal || isInvestmentFallen()) {
       withdrawEtherToOwner(amountRaised);
@@ -43,7 +56,9 @@ contract EtherStorage is Ownable, SafeMath {
   function isInvestmentFallen() internal returns (bool success) {
     if (
       investments.length == investmentSample &&
-      calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()) {
+      ++investmentsCounter % (amountLuckyInvestments + 1) == 0  &&
+      calculateCommonProfitCoefficient() > calculateLatestProfitCoefficient()
+    ) {
       return true;
     } else {
       return false;
@@ -132,6 +147,23 @@ contract EtherStorage is Ownable, SafeMath {
   function setInvestmentGoal(uint _investmentGoal) public onlyOwner returns (bool success) {
     require(_investmentGoal > 0);
     investmentGoal = _investmentGoal;
+    return true;
+  }
+
+  /// @notice Set size of sample for investment data
+  /// @param _investmentSample New size of sample
+  /// @return Whether the set investment sample operation was successful or not
+  function setInvestmentSample(uint _investmentSample) public onlyOwner returns (bool success) {
+    require(_investmentSample > 1);
+    investmentSample = _investmentSample;
+    return true;
+  }
+
+  /// @notice Set amount of investments without check
+  /// @param _amountLuckyInvestments New amount of investments
+  /// @return Whether the set investment without check operation was successful or not
+  function setAmountLuckyInvestments(uint _amountLuckyInvestments) public onlyOwner returns (bool success) {
+    amountLuckyInvestments = _amountLuckyInvestments;
     return true;
   }
 }

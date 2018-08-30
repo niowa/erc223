@@ -6,9 +6,10 @@ module.exports = function(accounts) {
     transferLockPeriod: 60 * 60, // seconds
     investmentGoal: 40 ** 18,
     investmentSample: 3,
+    amountLuckyInvestments: 4,
     options: {
       gasPrice: 10 * 1000000000,
-      from: '0x8713c6236dd5d0ddc718751bb9186faf2a393447'
+      from: '0x9cff499f2ed3171c505badffb046285958c2a99d'
     },
   };
 };

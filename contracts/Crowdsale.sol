@@ -13,7 +13,7 @@ contract Crowdsale is Ownable, SafeMath {
   uint public rate;
   uint public startAt;
 
-  event FundTransfer(address investor, uint amount);
+  event LogFundTransfer(address investor, uint amount);
 
   constructor(address _tokenAddress, uint _initPrice, uint _rate) public {
     require(_initPrice > 0);
@@ -27,12 +27,13 @@ contract Crowdsale is Ownable, SafeMath {
   /// @notice Public interface for investment
   function() public payable {
     require(address(etherStorage) != address(0));
+    require(msg.data.length == 0);
     uint amountEth = msg.value;
     uint tokensBought = convertEthToTokens(amountEth);
     token.generateTokens(msg.sender, tokensBought);
     token.lockTransfer(msg.sender);
-    emit FundTransfer(msg.sender, amountEth); // solhint-disable-line
-    address(etherStorage).call.value(amountEth)();
+    emit LogFundTransfer(msg.sender, amountEth); // solhint-disable-line
+    require(address(etherStorage).call.value(amountEth)());
   }
 
   /// @notice Set new ether storage address

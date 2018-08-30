@@ -12,6 +12,7 @@ const tokenCost = 100;
 const newRate = 3;
 const etherInWei = 1000;
 const investmentSample = 3;
+const amountLuckyInvestments = 4;
 
 function sleep(ms = 0) {
   return new Promise(r => setTimeout(r, ms));
@@ -26,10 +27,16 @@ const createNewContract = async (
   symbol = 'CHIP',
   investmentGoal = etherInWei * 3,
   investmentSample = 3,
+  amountLuckyInvestments = 4
 ) => {
   const token = await Token.new(name, symbol, decimals, lockPeriod);
   const crowdsaleContract = await Crowdsale.new(token.address, tokenCost, rate);
-  const etherStorageContract = await EtherStorage.new(crowdsaleContract.address, investmentGoal, investmentSample);
+  const etherStorageContract = await EtherStorage.new(
+    crowdsaleContract.address,
+    investmentGoal,
+    investmentSample,
+    amountLuckyInvestments
+  );
 
   return { token, crowdsaleContract, etherStorageContract };
 };
@@ -43,10 +50,11 @@ contract('EtherStorage', (accounts) => {
   });
   describe('#constructor', () => {
     it('check props after crating', async () => {
-      const etherStorage = await EtherStorage.new(accounts[1], etherInWei, investmentSample);
+      const etherStorage = await EtherStorage.new(accounts[1], etherInWei, investmentSample, amountLuckyInvestments);
       assert.equal(await etherStorage.crowdsale(), accounts[1]);
       assert.equal(await etherStorage.investmentGoal(), etherInWei);
       assert.equal(await etherStorage.investmentSample(), investmentSample);
+      assert.equal(await etherStorage.amountLuckyInvestments(), amountLuckyInvestments);
     });
   });
   describe('#setCrowdsale', () => {
@@ -59,6 +67,26 @@ contract('EtherStorage', (accounts) => {
       await etherStorageContract.setCrowdsale(accounts[1], { from: accounts[0] });
 
       await assert.eventually.equal(etherStorageContract.crowdsale(), accounts[1]);
+    });
+  });
+  describe('#setInvestmentSample', () => {
+    const investmentSample = 5;
+    it('should set investment sample', async () => {
+      const { etherStorageContract } = await createNewContract();
+      await etherStorageContract.setInvestmentSample(investmentSample);
+      const newInvestmentSample = await etherStorageContract.investmentSample();
+      assert.equal(+newInvestmentSample, investmentSample);
+    });
+    it('available only for creator', async () => {
+      const { etherStorageContract } = await createNewContract();
+
+      await assert.isRejected(etherStorageContract.setInvestmentSample(investmentSample, { from: accounts[1]}));
+    });
+    it('reject if investment sample is less than 2', async () => {
+      const investmentSample = 0;
+      const { etherStorageContract } = await createNewContract();
+
+      await assert.isRejected(etherStorageContract.setInvestmentSample(investmentSample));
     });
   });
   describe('#setInvestmentGoal', () => {
@@ -79,6 +107,20 @@ contract('EtherStorage', (accounts) => {
       const { etherStorageContract } = await createNewContract();
 
       await assert.isRejected(etherStorageContract.setInvestmentGoal(investmentGoal));
+    });
+  });
+  describe('#setAmountLuckyInvestments', () => {
+    const investments = 5;
+    it('should set count investments without check', async () => {
+      const { etherStorageContract } = await createNewContract();
+      await etherStorageContract.setAmountLuckyInvestments(investments);
+      const newInvestments = await etherStorageContract.amountLuckyInvestments();
+      assert.equal(+newInvestments, investments);
+    });
+    it('available only for creator', async () => {
+      const { etherStorageContract } = await createNewContract();
+
+      await assert.isRejected(etherStorageContract.setAmountLuckyInvestments(investments, { from: accounts[1]}));
     });
   });
   describe('#invest', () => {
@@ -118,7 +160,22 @@ contract('EtherStorage', (accounts) => {
       const investments = await etherStorageContract.investments.call([0]);
       assert.equal(+investments[0], etherInWei);
     });
-    it('should not to withdraw if investments grow', async () => {
+    it('should not withdraw if investments grow', async () => {
+      const { etherStorageContract } = await createNewContract(5, 0);
+      await etherStorageContract.setInvestmentGoal(etherInWei * 10);
+      await etherStorageContract.setInvestmentSample(2);
+
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      const countInvestments = await etherStorageContract.investmentsCounter();
+
+      assert.equal(countInvestments, 1);
+    });
+    it('should increase investments counter only after filling investments array', async () => {
       const { etherStorageContract } = await createNewContract(5, 0);
       await etherStorageContract.setInvestmentGoal(etherInWei * 10);
 
@@ -133,6 +190,24 @@ contract('EtherStorage', (accounts) => {
       const amountRaised = await etherStorageContract.amountRaised();
 
       assert.equal(+amountRaised, etherInWei * 4);
+    });
+    it('should not withdraw ether if now is not a time to check investments statistic', async () => {
+      const { etherStorageContract } = await createNewContract(5, 0);
+      await Promise.all([
+        etherStorageContract.setInvestmentGoal(etherInWei * 10),
+        etherStorageContract.setAmountLuckyInvestments(3),
+        etherStorageContract.setInvestmentSample(2),
+      ]);
+
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei * 3 });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei * 2 });
+      await sleep(1000);
+      await etherStorageContract.sendTransaction({ from: accounts[1], value: etherInWei });
+
+      const amountRaised = await etherStorageContract.amountRaised();
+
+      assert.equal(+amountRaised, etherInWei * 6);
     });
   });
   describe('#withdrawEtherToUser', () => {
@@ -197,7 +272,10 @@ contract('EtherStorage', (accounts) => {
     });
     it('should increase owner balance if investment have fallen', async () => {
       const { etherStorageContract } = await createNewContract(5, 0);
-      await etherStorageContract.setInvestmentGoal(etherInWei * 10);
+      await Promise.all([
+        etherStorageContract.setInvestmentGoal(etherInWei * 10),
+        etherStorageContract.setAmountLuckyInvestments(0),
+      ]);
 
       const prevBalance = web3.eth.getBalance(accounts[0]);
 
